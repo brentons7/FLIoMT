@@ -1,6 +1,6 @@
 # FL Experiment: Federated ECG Anomaly Detection — 3 Clients
 #
-# Topology: 1 server (Jetson Xavier), 3 clients (Nano, Pi5, Pi5)
+# Topology: 1 server (Jetson Xavier), 3 clients (Xavier partition 0, Nano partition 1, Pi5 partition 2)
 # Partition strategy: temporal (POC with single patient)
 #                     Switch to "patient" once multiple patients are enrolled.
 #

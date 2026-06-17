@@ -12,7 +12,7 @@
 #   HOST=0.0.0.0   Bind address (default: all interfaces)
 #   PORT=8080
 #   ROUNDS=20
-#   MIN_CLIENTS=3
+#   MIN_CLIENTS=2
 #   LOCAL_EPOCHS=2
 #   LR=0.0001
 
@@ -23,7 +23,7 @@ CONFIG=${CONFIG:-configs/experiments/fl_ecg_3client.yaml}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8080}
 ROUNDS=${ROUNDS:-10}
-MIN_CLIENTS=${MIN_CLIENTS:-3}
+MIN_CLIENTS=${MIN_CLIENTS:-2}
 LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
 LR=${LR:-0.0001}
 

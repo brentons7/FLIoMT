@@ -21,8 +21,8 @@ dataset collected under controlled exercise conditions.
 │                        EDGE DEVICES                                 │
 │                                                                     │
 │  ┌──────────────────┐   ┌──────────────────┐   ┌─────────────────┐ │
-│  │  Raspberry Pi 5  │   │   Jetson Nano    │   │  (3rd client)   │ │
-│  │                  │   │                  │   │                 │ │
+│  │  Jetson Xavier   │   │   Jetson Nano    │   │ Raspberry Pi 5  │ │
+│  │  (partition 0)   │   │  (partition 1)   │   │ (partition 2)   │ │
 │  │  Patient Data    │   │  Patient Data    │   │  Patient Data   │ │
 │  │  Local Model     │   │  Local Model     │   │  Local Model    │ │
 │  │  FL Client       │   │  FL Client       │   │  FL Client      │ │
@@ -34,8 +34,8 @@ dataset collected under controlled exercise conditions.
                                     │
                                     ▼ FedAvg aggregation
                        ┌────────────────────────┐
-                       │     FL SERVER          │
-                       │  (any network device)  │
+                       │  FL SERVER             │
+                       │  (Jetson Xavier)       │
                        │  No local data         │
                        │  Saves fl_summary.json │
                        └────────────────────────┘
@@ -148,8 +148,8 @@ All models use **reconstruction-based unsupervised anomaly detection**:
 ## Federated Learning Design Principles
 
 1. **Server independence**: The FL server requires only a network address. It
-   never accesses local data or initializes models. This enables deployment
-   on a cloud instance or dedicated hardware separate from all clients.
+   never accesses local data or initializes models. In the lab setup the Xavier
+   runs both the server process and a client process simultaneously.
 
 2. **Client decoupling**: `PhysioAnomalyClient` accepts a pre-built model and
    pre-built DataLoaders. It has no knowledge of config files, data loading,

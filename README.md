@@ -57,25 +57,25 @@ python scripts/train.py --config configs/experiments/poc_ecg_model_sweep.yaml
 
 ### Federated training
 
-The server can run on any machine (Jetson Xavier, workstation, etc.). It binds
-to all interfaces and prints the IP clients should use.
+The Xavier acts as both server and a client (partition 0). Start the server
+first, then connect all three clients.
 
 ```bash
-# 1. Start the server (on whichever machine will aggregate):
+# 1. Start the server on the Xavier:
 bash scripts/fl/start_server.sh
 # Prints: "Clients should connect to SERVER_IP=<ip>"
 
 # 2. Start each client — replace <server-ip> with the IP printed above.
-#    Partition IDs must be unique, 0-indexed, and < NUM_PARTITIONS.
+#    Run all three on their respective devices.
 
-# Jetson Nano (GPU, partition 0):
+# Jetson Xavier as client (GPU, partition 0):
+SERVER_IP=<server-ip> bash scripts/fl/start_client_xavier.sh
+
+# Jetson Nano (GPU, partition 1):
 SERVER_IP=<server-ip> bash scripts/fl/start_client_nano.sh
 
-# Raspberry Pi 5 (CPU, partition 1):
+# Raspberry Pi 5 (CPU, partition 2):
 SERVER_IP=<server-ip> bash scripts/fl/start_client_pi5.sh
-
-# Jetson Xavier as client (GPU, partition 2) — when Xavier is not the server:
-SERVER_IP=<server-ip> bash scripts/fl/start_client_xavier.sh
 ```
 
 Key environment overrides for the server:
@@ -83,9 +83,6 @@ Key environment overrides for the server:
 ```bash
 ROUNDS=10 MIN_CLIENTS=2 LOCAL_EPOCHS=1 LR=0.0001 PORT=8080 bash scripts/fl/start_server.sh
 ```
-
-For a 2-client run (e.g., Nano + Pi 5), pass `NUM_PARTITIONS=2` to each client
-via `start_client.sh` directly, or edit the device script before running.
 
 ## Repository Structure
 

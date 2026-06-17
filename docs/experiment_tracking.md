@@ -158,7 +158,7 @@ no local data and cannot evaluate the model. Instead, `fl/server.py` writes
   "fl_run": {
     "rounds_completed": 10,
     "rounds_requested": 10,
-    "min_clients": 3,
+    "min_clients": 2,
     "local_epochs": 1,
     "learning_rate": 0.0001
   },
