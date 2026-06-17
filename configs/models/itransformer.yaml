@@ -1,0 +1,13 @@
+# iTransformer — default hyperparameters for anomaly detection
+# Source: tslib/scripts/anomaly_detection/MSL/iTransformer.sh
+# Tier 1 | Edge-compatible: yes
+# Note: Inverted attention treats each channel as a token.
+#       Strong for multi-channel data (ECG + PPG combined).
+
+model:
+  name: iTransformer
+  d_model: 32
+  n_heads: 8
+  e_layers: 1
+  d_ff: 32
+  dropout: 0.1

@@ -1,0 +1,5 @@
+# Ignore large binary outputs — keep only JSON metadata and metrics
+*.pth
+*.npy
+*.log
+*.pkl

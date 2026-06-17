@@ -1,0 +1,13 @@
+# PatchTST — default hyperparameters for anomaly detection
+# Source: tslib/scripts/anomaly_detection/MSL/PatchTST.sh
+# Tier 1 | Edge-compatible: yes
+# Note: patch_len=16 at 100 Hz = 160ms windows, suitable for ECG morphology.
+
+model:
+  name: PatchTST
+  d_model: 32
+  n_heads: 8
+  e_layers: 1
+  d_ff: 32
+  dropout: 0.1
+  patch_len: 16

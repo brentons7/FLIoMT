@@ -1,0 +1,54 @@
+# Generated data — regenerable from raw CSVs
+data/processed/
+
+# Experiment outputs — large binary files (metadata.json / metrics.json are tracked)
+results/**/*.pth
+results/**/*.pt
+results/**/*.npy
+results/**/*.log
+
+# Model checkpoints saved outside results/
+*.pth
+*.pt
+
+# Logs
+*.log
+logs/
+
+# Scratch / temporary
+tmp/
+temp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Experiment tracking artifacts
+wandb/
+mlruns/

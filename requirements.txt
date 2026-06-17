@@ -1,0 +1,15 @@
+# Core dependencies — no version pins so pip resolves correctly for whichever
+# Python version is present on the device (3.8, 3.9, 3.10, 3.11, 3.13, etc.)
+torch
+numpy
+pandas
+scipy
+scikit-learn
+flwr
+pyyaml
+einops
+matplotlib
+gitpython
+
+# Raspberry Pi sensor acquisition — install only on Pi when collecting data:
+#   pip install adafruit-circuitpython-ads1x15 RPi.GPIO smbus2

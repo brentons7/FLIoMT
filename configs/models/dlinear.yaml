@@ -1,0 +1,12 @@
+# DLinear — default hyperparameters for anomaly detection
+# Source: tslib/models/DLinear.py
+# Tier 1 | Edge-compatible: yes
+# Note: DLinear is a simple linear decomposition baseline with almost no
+#       hyperparameters. It provides the lower-bound comparison for all
+#       more complex models. Any model that cannot outperform DLinear should
+#       be re-examined.
+
+model:
+  name: DLinear
+  moving_avg: 25  # Series decomposition window size
+  individual: false  # If true, one linear per channel; if false, shared weights

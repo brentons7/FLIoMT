@@ -1,0 +1,7 @@
+patient_id,sensor_type,condition,file_path,target_fs_hz,n_samples,duration_s,collection_date,notes
+brenton,ecg,resting,data/raw/ecg/brenton_ecg_resting_20260610_180351.csv,100,tbd,tbd,2026-06-10,
+brenton,ecg,light_activity,data/raw/ecg/brenton_ecg_light_activity_20260610_182703.csv,100,tbd,tbd,2026-06-10,
+brenton,ecg,post_exercise,data/raw/ecg/brenton_ecg_post_exercise_20260610_183919.csv,100,tbd,tbd,2026-06-10,
+brenton,ppg,resting,data/raw/ppg/brenton_ppg_resting_20260610_202410.csv,100,tbd,tbd,2026-06-10,
+brenton,ppg,light_activity,data/raw/ppg/brenton_ppg_light_activity_20260610_201109.csv,100,tbd,tbd,2026-06-10,
+brenton,ppg,post_exercise,data/raw/ppg/brenton_ppg_post_exercise_20260610_203739.csv,100,tbd,tbd,2026-06-10,

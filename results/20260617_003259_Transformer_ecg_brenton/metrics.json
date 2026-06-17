@@ -1,0 +1,14 @@
+{
+  "training_time_seconds": 101.5,
+  "best_epoch": 3,
+  "best_val_loss": 0.0018829,
+  "experiment_id": "20260617_003259_Transformer_ecg_brenton",
+  "threshold": 0.11926543,
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "evaluation_mode": "labeled",
+  "n_train_windows": 41696,
+  "n_test_windows": 11858
+}

@@ -1,0 +1,13 @@
+# Mamba2 — default hyperparameters for anomaly detection
+# Tier 1 | Edge-compatible: yes (pure PyTorch, no CUDA kernel)
+# d_ff doubles as d_state (SSM state dimension)
+
+model:
+  name: Mamba2
+  d_model: 64
+  d_ff: 64       # SSM state dimension (d_state)
+  n_heads: 4     # grouped heads over d_inner
+  expand: 2      # d_inner = expand * d_model
+  d_conv: 4      # causal conv kernel size
+  e_layers: 2
+  dropout: 0.1

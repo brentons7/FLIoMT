@@ -1,0 +1,64 @@
+# FL Experiment: Federated ECG Anomaly Detection — 3 Clients
+#
+# Topology: 1 server (Jetson Xavier), 3 clients (Nano, Pi5, Pi5)
+# Partition strategy: temporal (POC with single patient)
+#                     Switch to "patient" once multiple patients are enrolled.
+#
+# Server is started independently via scripts/fl/start_server.sh.
+# Each client reads this config and overrides server_address from CLI.
+
+experiment:
+  name: fl_ecg_3client
+  description: >
+    Federated ECG anomaly detection with 3 edge device clients.
+    Temporal partitioning used for single-patient POC.
+  mode: federated
+
+data:
+  patient: brenton
+  sensor: ecg
+  train_conditions: [resting]
+  val_conditions: [resting]
+  test_conditions: [post_exercise]
+  seq_len: 100
+  step: 1
+  train_ratio: 0.7
+  val_ratio: 0.1
+
+preprocessing:
+  target_fs: 100
+  ecg:
+    bandpass_low: 0.5
+    bandpass_high: 40.0
+    filter_order: 4
+  scaler: standard
+  scaler_fit_condition: resting
+
+model:
+  name: Transformer              # Baseline; swap for PatchTST, TimesNet, etc.
+  enc_in: 1
+  c_out: 1
+  d_model: 64
+  d_ff: 128
+  n_heads: 8
+  e_layers: 2
+  dropout: 0.1
+
+training:
+  epochs: 1                      # Local epochs per FL round (keep low: 1–3)
+  batch_size: 16                 # Conservative for Pi memory constraints
+  learning_rate: 0.0001
+  patience: 3
+  lr_schedule: type1
+  anomaly_ratio: 1.0
+  seed: 42
+  device: auto
+
+fl:
+  enabled: true
+  server_address: "127.0.0.1:8080"  # Override via --server_address CLI arg
+  rounds: 10
+  min_clients: 2
+  local_epochs: 1
+  partition_strategy: temporal    # temporal | patient | condition
+  num_partitions: 3

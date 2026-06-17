@@ -1,0 +1,9 @@
+# KANAD — default hyperparameters for anomaly detection
+# Source: tslib/scripts/anomaly_detection/MSL/KANAD.sh
+# Tier 1 | Edge-compatible: yes
+# Note: d_model here is the Fourier/cosine basis order, not a transformer dimension.
+#       order=3 means 2*3+1=7 cosine basis functions per channel.
+
+model:
+  name: KANAD
+  d_model: 3  # basis order; increase for richer frequency representation
