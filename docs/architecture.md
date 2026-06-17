@@ -21,7 +21,7 @@ dataset collected under controlled exercise conditions.
 │                        EDGE DEVICES                                 │
 │                                                                     │
 │  ┌──────────────────┐   ┌──────────────────┐   ┌─────────────────┐ │
-│  │  Raspberry Pi A  │   │  Raspberry Pi B  │   │  Jetson Xavier  │ │
+│  │  Raspberry Pi 5  │   │   Jetson Nano    │   │  (3rd client)   │ │
 │  │                  │   │                  │   │                 │ │
 │  │  Patient Data    │   │  Patient Data    │   │  Patient Data   │ │
 │  │  Local Model     │   │  Local Model     │   │  Local Model    │ │
@@ -35,9 +35,9 @@ dataset collected under controlled exercise conditions.
                                     ▼ FedAvg aggregation
                        ┌────────────────────────┐
                        │     FL SERVER          │
-                       │  (Pi5 or standalone)   │
+                       │  (any network device)  │
                        │  No local data         │
-                       │  Network address only  │
+                       │  Saves fl_summary.json │
                        └────────────────────────┘
 ```
 
@@ -75,15 +75,15 @@ All models implement: `model(x: Tensor[B,L,C]) → x_hat: Tensor[B,L,C]`
 
 - `registry.py` — `ModelRegistry`: lazy-loading, capability declarations, tier info
 - `layers/` — Shared layer implementations (ported from tslib/layers/)
-- `{model_name}.py` — Individual model implementations (24 models total)
+- `{model_name}.py` — Individual model implementations (23 models total)
 
 **Model tiers:**
 
 | Tier | Count | Status | Purpose |
 |------|-------|--------|---------|
-| 1    | 8     | Migrate first | Core experimental set; proven or high physio relevance |
-| 2    | 8     | Phase 2 migration | Extended comparison set |
-| 3    | 8     | Phase 3 migration | Experimental; complex deps or niche use cases |
+| 1    | 8     | Ported | Core experimental set; proven or high physio relevance |
+| 2    | 8     | Partial / planned | Extended comparison set |
+| 3    | 7     | Planned | Experimental; complex deps or niche use cases |
 
 ### `training/`
 Centralized training and evaluation infrastructure.
@@ -111,17 +111,18 @@ Shell and Python entry points.
 
 - `train.py` — Centralized training: `python scripts/train.py --config ...`
 - `preprocess.sh` — Batch preprocessing wrapper
-- `fl/` — Server and per-device client launcher scripts
+- `fl/` — Server and per-device client launcher scripts (server, client, nano, pi5, xavier)
 
 ### `data/`
-- `ecg_raw/`, `ppg_raw/` — Original sensor CSVs (legacy paths; do not rename)
-- `raw/` — New canonical location for future collection sessions
+- `raw/ecg/` — Raw ECG CSVs
+- `raw/ppg/` — Raw PPG CSVs
 - `processed/` — Preprocessed .npy arrays (git-ignored; regenerable)
 - `manifests/sessions.csv` — Registry of all known sessions
 
 ### `results/`
-- `{experiment_id}/metadata.json` — Git hash + full config (git-tracked)
-- `{experiment_id}/metrics.json` — Evaluation metrics (git-tracked)
+- `{experiment_id}/metadata.json` — Git hash + full config (centralized runs; git-tracked)
+- `{experiment_id}/metrics.json` — Evaluation metrics (centralized runs; git-tracked)
+- `{experiment_id}/fl_summary.json` — Per-round loss history + timing (FL runs; git-tracked)
 - `{experiment_id}/checkpoint.pth` — Best model weights (git-ignored)
 
 ---

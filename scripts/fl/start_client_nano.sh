@@ -17,7 +17,7 @@ if [ -z "${SERVER_IP:-}" ]; then
 fi
 
 SERVER_IP="$SERVER_IP" \
-PARTITION_ID=0 \
+PARTITION_ID=1 \
 NUM_PARTITIONS=3 \
 USE_GPU=true \
 BATCH_SIZE=8 \

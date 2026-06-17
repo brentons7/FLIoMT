@@ -20,5 +20,5 @@ PARTITION_ID=0 \
 NUM_PARTITIONS=3 \
 USE_GPU=true \
 BATCH_SIZE=32 \
-NUM_WORKERS=4 \
+NUM_WORKERS=0 \
     bash scripts/fl/start_client.sh

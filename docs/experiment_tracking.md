@@ -142,27 +142,49 @@ Intended for real deployment where no condition labels are available.
 
 ---
 
-## FL-Specific Tracking
+## FL Runs: fl_summary.json
 
-For federated runs, `metadata.json` includes the full `fl` config section:
+Federated runs do not use `metadata.json` / `metrics.json` — the server has
+no local data and cannot evaluate the model. Instead, `fl/server.py` writes
+`fl_summary.json` to a timestamped results directory after all rounds complete.
 
 ```json
-"fl": {
-  "strategy": "FedAvg",
-  "num_rounds": 10,
-  "num_clients": 3,
-  "local_epochs": 1,
-  "partition_strategy": "temporal",
-  "server_address": "192.168.1.10:8080",
-  "min_fit_clients": 2,
-  "min_evaluate_clients": 2,
-  "min_available_clients": 2
+{
+  "experiment_id": "20260617_143022_fl_Transformer_ecg_brenton",
+  "timestamp": "2026-06-17T14:30:22Z",
+
+  "config": { "model": {...}, "data": {...}, "training": {...}, "fl": {...} },
+
+  "fl_run": {
+    "rounds_completed": 10,
+    "rounds_requested": 10,
+    "min_clients": 3,
+    "local_epochs": 1,
+    "learning_rate": 0.0001
+  },
+
+  "round_history": [
+    {"round": 1, "val_loss": 0.02341},
+    {"round": 2, "val_loss": 0.01987},
+    ...
+    {"round": 10, "val_loss": 0.00891}
+  ],
+
+  "final_val_loss": 0.00891,
+  "best_round": 8,
+  "best_val_loss": 0.00863,
+  "total_time_seconds": 312.4
 }
 ```
 
-Per-round metrics (val_loss per client per round) are logged by the Flower
-server to stdout. These are not currently captured to JSON — add if
-fine-grained round-level diagnostics are needed.
+The server also prints a formatted terminal summary with a bar chart of
+per-round val_loss as soon as all rounds finish.
+
+`val_loss` is a weighted average of each client's local validation reconstruction
+error (MSE), weighted by number of validation samples. It measures how well the
+global model reconstructs the normal baseline on held-out data — lower is better.
+It does not directly give F1 or precision/recall; those require labeled evaluation
+on the test set, which is a separate step (see `training/evaluator.py`).
 
 ---
 

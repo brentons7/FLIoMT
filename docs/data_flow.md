@@ -233,8 +233,8 @@ model, train_loader, deployment_loader
 
 | Asset | Location | Format | Shape | Git-tracked |
 |-------|----------|--------|-------|-------------|
-| Raw ECG CSVs | `data/ecg_raw/` | CSV | [T, 5 cols] | Yes |
-| Raw PPG CSVs | `data/ppg_raw/` | CSV | [T, 5 cols] | Yes |
+| Raw ECG CSVs | `data/raw/ecg/` | CSV | [T, 5 cols] | Yes |
+| Raw PPG CSVs | `data/raw/ppg/` | CSV | [T, 5 cols] | Yes |
 | Session manifest | `data/manifests/sessions.csv` | CSV | rows × cols | Yes |
 | Processed ECG | `data/processed/{p}/ecg_{c}.npy` | npy float32 | [T, 1] | No |
 | Processed PPG | `data/processed/{p}/ppg_{c}.npy` | npy float32 | [T, 2] | No |
