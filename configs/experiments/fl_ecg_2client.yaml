@@ -1,6 +1,6 @@
-# FL Experiment: Federated ECG Anomaly Detection — 3 Clients
+# FL Experiment: Federated ECG Anomaly Detection — 2 Clients
 #
-# Topology: 1 server (Jetson Xavier), 3 clients (Xavier partition 0, Nano partition 1, Pi5 partition 2)
+# Topology: 1 server (Orin Nano #1), 2 clients (Orin Nano #2 partition 0, Pi 5 partition 1)
 # Partition strategy: temporal (POC with single patient)
 #                     Switch to "patient" once multiple patients are enrolled.
 #
@@ -8,9 +8,9 @@
 # Each client reads this config and overrides server_address from CLI.
 
 experiment:
-  name: fl_ecg_3client
+  name: fl_ecg_2client
   description: >
-    Federated ECG anomaly detection with 3 edge device clients.
+    Federated ECG anomaly detection with 2 edge device clients.
     Temporal partitioning used for single-patient POC.
   mode: federated
 
@@ -46,7 +46,7 @@ model:
 
 training:
   epochs: 1                      # Local epochs per FL round (keep low: 1–3)
-  batch_size: 16                 # Conservative for Pi memory constraints
+  batch_size: 8                  # Conservative for Orin Nano memory constraints
   learning_rate: 0.0001
   patience: 3
   lr_schedule: type1
@@ -61,4 +61,4 @@ fl:
   min_clients: 2
   local_epochs: 1
   partition_strategy: temporal    # temporal | patient | condition
-  num_partitions: 3
+  num_partitions: 2

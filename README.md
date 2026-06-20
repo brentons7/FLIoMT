@@ -57,24 +57,21 @@ python scripts/train.py --config configs/experiments/poc_ecg_model_sweep.yaml
 
 ### Federated training
 
-The Xavier acts as both server and a client (partition 0). Start the server
-first, then connect all three clients.
+Orin Nano #1 runs the server only. Start the server first, then connect both
+clients.
 
 ```bash
-# 1. Start the server on the Xavier:
+# 1. On Orin Nano #1 — start the server:
 bash scripts/fl/start_server.sh
 # Prints: "Clients should connect to SERVER_IP=<ip>"
 
 # 2. Start each client — replace <server-ip> with the IP printed above.
-#    Run all three on their respective devices.
+#    Run on their respective devices.
 
-# Jetson Xavier as client (GPU, partition 0):
-SERVER_IP=<server-ip> bash scripts/fl/start_client_xavier.sh
+# Orin Nano #2 (GPU, partition 0):
+SERVER_IP=<server-ip> bash scripts/fl/start_client_orin.sh
 
-# Jetson Nano (GPU, partition 1):
-SERVER_IP=<server-ip> bash scripts/fl/start_client_nano.sh
-
-# Raspberry Pi 5 (CPU, partition 2):
+# Raspberry Pi 5 (CPU, partition 1):
 SERVER_IP=<server-ip> bash scripts/fl/start_client_pi5.sh
 ```
 
@@ -109,9 +106,8 @@ FLIoMT/
 │   └── fl/
 │       ├── start_server.sh
 │       ├── start_client.sh        # Generic client (all params via env)
-│       ├── start_client_nano.sh   # Jetson Nano preset
-│       ├── start_client_pi5.sh    # Raspberry Pi 5 preset
-│       └── start_client_xavier.sh # Jetson Xavier preset (client role)
+│       ├── start_client_orin.sh   # Orin Nano #2 preset (client)
+│       └── start_client_pi5.sh    # Raspberry Pi 5 preset
 ├── data/
 │   ├── raw/
 │   │   ├── ecg/          # Raw ECG CSVs

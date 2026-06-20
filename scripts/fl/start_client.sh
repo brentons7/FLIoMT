@@ -27,7 +27,7 @@ if [ -z "${SERVER_IP:-}" ]; then
     exit 1
 fi
 
-CONFIG=${CONFIG:-configs/experiments/fl_ecg_3client.yaml}
+CONFIG=${CONFIG:-configs/experiments/fl_ecg_2client.yaml}
 PORT=${PORT:-8080}
 PARTITION_ID=${PARTITION_ID:-0}
 NUM_PARTITIONS=${NUM_PARTITIONS:-3}

@@ -17,28 +17,28 @@ dataset collected under controlled exercise conditions.
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        EDGE DEVICES                                 │
-│                                                                     │
-│  ┌──────────────────┐   ┌──────────────────┐   ┌─────────────────┐ │
-│  │  Jetson Xavier   │   │   Jetson Nano    │   │ Raspberry Pi 5  │ │
-│  │  (partition 0)   │   │  (partition 1)   │   │ (partition 2)   │ │
-│  │  Patient Data    │   │  Patient Data    │   │  Patient Data   │ │
-│  │  Local Model     │   │  Local Model     │   │  Local Model    │ │
-│  │  FL Client       │   │  FL Client       │   │  FL Client      │ │
-│  └────────┬─────────┘   └────────┬─────────┘   └───────┬─────────┘ │
-│           │ weights only          │ weights only          │          │
-└───────────┼───────────────────────┼───────────────────────┼──────────┘
-            │                       │                       │
-            └───────────────────────┴───────────────────────┘
-                                    │
-                                    ▼ FedAvg aggregation
-                       ┌────────────────────────┐
-                       │  FL SERVER             │
-                       │  (Jetson Xavier)       │
-                       │  No local data         │
-                       │  Saves fl_summary.json │
-                       └────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│                   EDGE DEVICES                   │
+│                                                  │
+│  ┌───────────────────┐   ┌──────────────────┐    │
+│  │  Orin Nano #2     │   │ Raspberry Pi 5   │    │
+│  │  (partition 0)    │   │  (partition 1)   │    │
+│  │  Patient Data     │   │  Patient Data    │    │
+│  │  Local Model      │   │  Local Model     │    │
+│  │  FL Client        │   │  FL Client       │    │
+│  └────────┬──────────┘   └────────┬─────────┘    │
+│           │ weights only           │ weights only  │
+└───────────┼────────────────────────┼──────────────┘
+            │                        │
+            └────────────┬───────────┘
+                         │
+                         ▼ FedAvg aggregation
+            ┌────────────────────────┐
+            │  FL SERVER             │
+            │  (Orin Nano #1)        │
+            │  No local data         │
+            │  Saves fl_summary.json │
+            └────────────────────────┘
 ```
 
 Raw sensor data never leaves the edge device. Only model weight arrays
@@ -148,8 +148,8 @@ All models use **reconstruction-based unsupervised anomaly detection**:
 ## Federated Learning Design Principles
 
 1. **Server independence**: The FL server requires only a network address. It
-   never accesses local data or initializes models. In the lab setup the Xavier
-   runs both the server process and a client process simultaneously.
+   never accesses local data or initializes models. Orin Nano #1 runs the server
+   exclusively; it holds no partition of the dataset.
 
 2. **Client decoupling**: `PhysioAnomalyClient` accepts a pre-built model and
    pre-built DataLoaders. It has no knowledge of config files, data loading,
