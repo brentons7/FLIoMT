@@ -24,7 +24,7 @@ data:
   val_conditions: [baseline]
   test_conditions: [stress]
   seq_len: 100
-  step: 1
+  step: 50
   train_ratio: 0.7
   val_ratio: 0.1
 

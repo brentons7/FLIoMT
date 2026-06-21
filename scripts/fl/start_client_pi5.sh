@@ -21,6 +21,6 @@ PARTITION_ID=0 \
 NUM_PARTITIONS=1 \
 PATIENT=wesad_S3 \
 USE_GPU=false \
-BATCH_SIZE=16 \
+BATCH_SIZE=8 \
 NUM_WORKERS=0 \
     bash scripts/fl/start_client.sh
