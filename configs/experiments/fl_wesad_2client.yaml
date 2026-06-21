@@ -60,8 +60,11 @@ training:
 fl:
   enabled: true
   server_address: "127.0.0.1:8080"
-  rounds: 50
+  rounds: 100
   min_clients: 2
   local_epochs: 1
+  learning_rate: 0.0001
+  lr_min: 0.00001
+  lr_schedule: cosine
   partition_strategy: temporal
   num_partitions: 1             # No temporal split — each client already has its own subject

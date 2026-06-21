@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# FL client preset for Jetson Orin Nano #2 — partition_id=0, CUDA GPU (Ampere SM87)
-#
-# JetPack 6, CUDA 12.6, Python 3.10. USE_GPU=true enables CUDA inference.
-# Batch size 8 (Orin Nano has 8 GB shared LPDDR5 RAM).
+# FL client — Jetson Orin Nano #2
+# Edit variables below or pass as env overrides.
 #
 # Usage:
 #   SERVER_IP=192.168.1.10 bash scripts/fl/start_client_orin.sh
+#   SERVER_IP=192.168.1.10 MODEL=TimesNet bash scripts/fl/start_client_orin.sh
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -16,12 +15,24 @@ if [ -z "${SERVER_IP:-}" ]; then
     exit 1
 fi
 
+# ── Experiment (must match server) ────────────────────────────────────────────
+MODEL=${MODEL:-PatchTST}
+
+# ── This device ───────────────────────────────────────────────────────────────
+PATIENT=${PATIENT:-wesad_S2}
+PARTITION_ID=${PARTITION_ID:-0}
+NUM_PARTITIONS=${NUM_PARTITIONS:-1}
+BATCH_SIZE=${BATCH_SIZE:-16}
+USE_GPU=${USE_GPU:-true}
+NUM_WORKERS=${NUM_WORKERS:-0}
+
+# ─────────────────────────────────────────────────────────────────────────────
 SERVER_IP="$SERVER_IP" \
-CONFIG=configs/experiments/fl_wesad_2client.yaml \
-PARTITION_ID=0 \
-NUM_PARTITIONS=1 \
-PATIENT=wesad_S2 \
-USE_GPU=true \
-BATCH_SIZE=16 \
-NUM_WORKERS=0 \
+MODEL="$MODEL" \
+PATIENT="$PATIENT" \
+PARTITION_ID="$PARTITION_ID" \
+NUM_PARTITIONS="$NUM_PARTITIONS" \
+BATCH_SIZE="$BATCH_SIZE" \
+USE_GPU="$USE_GPU" \
+NUM_WORKERS="$NUM_WORKERS" \
     bash scripts/fl/start_client.sh

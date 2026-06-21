@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import math
 import time
 from pathlib import Path
 
@@ -59,16 +60,21 @@ class TimedFedAvg(FedAvg):
         super().__init__(*args, **kwargs)
         self._round_start: dict[int, float] = {}
         self._bytes_out:   dict[int, int]   = {}
+        self._round_lr:    dict[int, float] = {}
         self.round_stats:  list[dict]        = []
         self._model_size:  dict | None       = None
 
     def configure_fit(self, server_round, parameters, client_manager):
         self._round_start[server_round] = time.time()
-        # Record bytes being broadcast to each client
         per_client_bytes = _params_bytes(parameters)
         n_clients = len(client_manager.all())
         self._bytes_out[server_round] = per_client_bytes * max(n_clients, 1)
-        return super().configure_fit(server_round, parameters, client_manager)
+        instructions = super().configure_fit(server_round, parameters, client_manager)
+        # Capture the LR sent to clients this round (read from first instruction)
+        if instructions:
+            first_config = instructions[0][1].config if instructions else {}
+            self._round_lr[server_round] = float(first_config.get("learning_rate", 0))
+        return instructions
 
     def aggregate_fit(self, server_round, results, failures):
         wall = time.time() - self._round_start.get(server_round, time.time())
@@ -94,6 +100,7 @@ class TimedFedAvg(FedAvg):
 
         stat: dict = {
             "round":               server_round,
+            "learning_rate":       self._round_lr.get(server_round),
             "round_wall_seconds":  round(wall, 2),
             "comm_bytes_in":       bytes_in,
             "comm_bytes_out":      bytes_out,
@@ -131,12 +138,17 @@ def weighted_average(metrics: list[tuple[int, dict]]) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="FLIoMT FL Server")
     parser.add_argument("--config",        type=str,   default=None)
+    parser.add_argument("--model",         type=str,   default=None,
+                        help="Model name for logging/summary (e.g. PatchTST)")
     parser.add_argument("--host",          type=str,   default=None)
     parser.add_argument("--port",          type=int,   default=None)
     parser.add_argument("--rounds",        type=int,   default=None)
     parser.add_argument("--min_clients",   type=int,   default=None)
     parser.add_argument("--local_epochs",  type=int,   default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
+    parser.add_argument("--lr_min",        type=float, default=None)
+    parser.add_argument("--lr_schedule",   type=str,   default=None,
+                        choices=["cosine", "none"])
     args = parser.parse_args()
 
     cfg: dict = {}
@@ -146,15 +158,29 @@ def main() -> None:
             cfg = yaml.safe_load(f)
         fl_cfg = cfg.get("fl", {})
 
+    model_name   = args.model          or cfg.get("model", {}).get("name", "unknown")
     host         = args.host          or "0.0.0.0"
     port         = args.port          or fl_cfg.get("port", 8080)
     rounds       = args.rounds        or fl_cfg.get("rounds", 10)
     min_clients  = args.min_clients   or fl_cfg.get("min_clients", 2)
     local_epochs = args.local_epochs  or fl_cfg.get("local_epochs", 1)
     lr           = args.learning_rate or fl_cfg.get("learning_rate", 1e-4)
+    lr_min       = args.lr_min        if args.lr_min is not None else fl_cfg.get("lr_min", 1e-5)
+    lr_schedule  = args.lr_schedule   or fl_cfg.get("lr_schedule", "none")
+
+    def _decayed_lr(server_round: int) -> float:
+        if lr_schedule == "cosine":
+            # Cosine annealing: lr_max → lr_min over all rounds
+            progress = (server_round - 1) / max(rounds - 1, 1)
+            return lr_min + 0.5 * (lr - lr_min) * (1 + math.cos(math.pi * progress))
+        return lr
 
     def fit_config(server_round: int) -> dict:
-        return {"local_epochs": local_epochs, "learning_rate": lr, "round": server_round}
+        return {
+            "local_epochs":  local_epochs,
+            "learning_rate": _decayed_lr(server_round),
+            "round":         server_round,
+        }
 
     strategy = TimedFedAvg(
         min_fit_clients=min_clients,
@@ -163,9 +189,11 @@ def main() -> None:
         on_fit_config_fn=fit_config,
         evaluate_metrics_aggregation_fn=weighted_average,
     )
+    strategy._fit_config_fn = fit_config  # expose for per-round LR recording
 
     print(f"Starting FL server on {host}:{port}")
-    print(f"  rounds={rounds}  min_clients={min_clients}  local_epochs={local_epochs}  lr={lr}")
+    lr_info = f"  lr={lr}" + (f" → {lr_min} ({lr_schedule})" if lr_schedule != "none" else "")
+    print(f"  rounds={rounds}  min_clients={min_clients}  local_epochs={local_epochs}{lr_info}")
 
     t_start = time.time()
     history = fl.server.start_server(
@@ -175,17 +203,23 @@ def main() -> None:
     )
     elapsed = time.time() - t_start
 
-    _save_results(history, strategy, cfg, rounds, min_clients, local_epochs, lr, elapsed)
+    _save_results(
+        history, strategy, cfg, model_name, rounds, min_clients, local_epochs,
+        lr, lr_min, lr_schedule, elapsed,
+    )
 
 
 def _save_results(
     history,
     strategy: TimedFedAvg,
     cfg: dict,
+    model_name: str,
     rounds: int,
     min_clients: int,
     local_epochs: int,
     lr: float,
+    lr_min: float,
+    lr_schedule: str,
     elapsed: float,
 ) -> None:
     # Per-round val_loss from Flower History
@@ -219,7 +253,6 @@ def _save_results(
     best_entry     = min(round_history, key=lambda e: e.get("val_loss", float("inf"))) if round_history else {}
 
     ts            = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    model_name    = cfg.get("model", {}).get("name", "unknown")
     experiment_id = cfg.get("experiment", {}).get("name", f"fl_{model_name}")
     experiment_id = f"{ts}_{experiment_id}"
 
@@ -237,6 +270,8 @@ def _save_results(
             "min_clients":      min_clients,
             "local_epochs":     local_epochs,
             "learning_rate":    lr,
+            "lr_min":           lr_min,
+            "lr_schedule":      lr_schedule,
         },
 
         "model_size": strategy._model_size,

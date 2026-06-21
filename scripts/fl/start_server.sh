@@ -1,48 +1,49 @@
 #!/usr/bin/env bash
-# Start the Flower FL aggregation server.
+# FL aggregation server.
 #
-# The server has no local data. It only coordinates weight aggregation.
-# It can run on any machine accessible to the clients on the network
-# (Xavier, Raspberry Pi, workstation, etc.).
+# Edit the variables below to configure an experiment, or pass any of them
+# as environment overrides at runtime:
 #
-# Usage:
-#   bash scripts/fl/start_server.sh
-#
-# Environment overrides:
-#   HOST=0.0.0.0   Bind address (default: all interfaces)
-#   PORT=8080
-#   ROUNDS=20
-#   MIN_CLIENTS=2
-#   LOCAL_EPOCHS=2
-#   LR=0.0001
+#   ROUNDS=200 bash scripts/fl/start_server.sh
+#   MODEL=TimesNet LR=0.0005 bash scripts/fl/start_server.sh
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-CONFIG=${CONFIG:-configs/experiments/fl_wesad_2client.yaml}
-HOST=${HOST:-0.0.0.0}
-PORT=${PORT:-8080}
+# ── Experiment ────────────────────────────────────────────────────────────────
+MODEL=${MODEL:-PatchTST}
+ROUNDS=${ROUNDS:-100}
 MIN_CLIENTS=${MIN_CLIENTS:-2}
 LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
-LR=${LR:-0.0001}
 
-# Detect the primary non-loopback IP so clients know what SERVER_IP to use.
+# ── Learning rate ─────────────────────────────────────────────────────────────
+LR=${LR:-0.0001}
+LR_MIN=${LR_MIN:-0.00001}
+LR_SCHEDULE=${LR_SCHEDULE:-cosine}     # cosine | none
+
+# ── Network ───────────────────────────────────────────────────────────────────
+HOST=${HOST:-0.0.0.0}
+PORT=${PORT:-8080}
+
+# ─────────────────────────────────────────────────────────────────────────────
 SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 
 echo "Starting FL server"
-echo "  config:      $CONFIG"
-echo "  host:        $HOST"
-echo "  port:        $PORT"
-echo "  min_clients: $MIN_CLIENTS"
+echo "  model:       $MODEL"
+echo "  rounds:      $ROUNDS   local_epochs=$LOCAL_EPOCHS   min_clients=$MIN_CLIENTS"
+echo "  lr:          $LR → $LR_MIN ($LR_SCHEDULE)"
+echo "  bind:        $HOST:$PORT"
 echo ""
 echo "  Clients should connect to SERVER_IP=${SERVER_IP:-<this-machine-ip>}"
 echo ""
 
 python fl/server.py \
-    --config        "$CONFIG" \
+    --model         "$MODEL" \
     --host          "$HOST" \
     --port          "$PORT" \
+    --rounds        "$ROUNDS" \
     --min_clients   "$MIN_CLIENTS" \
     --local_epochs  "$LOCAL_EPOCHS" \
     --learning_rate "$LR" \
-    ${ROUNDS:+--rounds "$ROUNDS"}
+    --lr_min        "$LR_MIN" \
+    --lr_schedule   "$LR_SCHEDULE"
