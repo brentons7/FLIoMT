@@ -22,7 +22,6 @@ cd "$(dirname "$0")/../.."
 CONFIG=${CONFIG:-configs/experiments/fl_wesad_2client.yaml}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8080}
-ROUNDS=${ROUNDS:-10}
 MIN_CLIENTS=${MIN_CLIENTS:-2}
 LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
 LR=${LR:-0.0001}
@@ -34,7 +33,6 @@ echo "Starting FL server"
 echo "  config:      $CONFIG"
 echo "  host:        $HOST"
 echo "  port:        $PORT"
-echo "  rounds:      $ROUNDS"
 echo "  min_clients: $MIN_CLIENTS"
 echo ""
 echo "  Clients should connect to SERVER_IP=${SERVER_IP:-<this-machine-ip>}"
@@ -44,7 +42,7 @@ python fl/server.py \
     --config        "$CONFIG" \
     --host          "$HOST" \
     --port          "$PORT" \
-    --rounds        "$ROUNDS" \
     --min_clients   "$MIN_CLIENTS" \
     --local_epochs  "$LOCAL_EPOCHS" \
-    --learning_rate "$LR"
+    --learning_rate "$LR" \
+    ${ROUNDS:+--rounds "$ROUNDS"}
