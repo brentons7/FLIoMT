@@ -60,7 +60,7 @@ training:
 fl:
   enabled: true
   server_address: "127.0.0.1:8080"
-  rounds: 10
+  rounds: 50
   min_clients: 2
   local_epochs: 1
   partition_strategy: temporal
