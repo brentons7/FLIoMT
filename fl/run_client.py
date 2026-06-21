@@ -55,6 +55,8 @@ def parse_args() -> argparse.Namespace:
                         help="Override batch size from config")
     parser.add_argument("--num_workers", type=int, default=None,
                         help="DataLoader worker threads")
+    parser.add_argument("--patient", type=str, default=None,
+                        help="Override data.patient in config (e.g. wesad_S2)")
     return parser.parse_args()
 
 
@@ -83,6 +85,9 @@ def main() -> None:
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
+
+    if args.patient is not None:
+        config["data"]["patient"] = args.patient
 
     fl_cfg            = config.setdefault("fl", {})
     num_partitions    = args.num_partitions or fl_cfg.get("num_partitions", 3)

@@ -11,12 +11,12 @@
 #   NUM_PARTITIONS   Total number of clients
 #
 # Optional:
-#   CONFIG           Path to experiment YAML (default: fl_ecg_3client.yaml)
+#   CONFIG           Path to experiment YAML (default: fl_ecg_2client.yaml)
 #   PORT             Server port (default: 8080)
 #   USE_GPU          "true" or "false" (default: false)
-#   GPU_ID           GPU device index (default: 0)
 #   BATCH_SIZE       Override batch size from config
-#   NUM_WORKERS      DataLoader worker threads (default: 2)
+#   NUM_WORKERS      DataLoader worker threads (default: 0)
+#   PATIENT          Override data.patient in config (e.g. wesad_S2)
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -47,4 +47,5 @@ python fl/run_client.py \
     --num_partitions  "$NUM_PARTITIONS" \
     ${USE_GPU:+--use_gpu} \
     ${BATCH_SIZE:+--batch_size "$BATCH_SIZE"} \
-    ${NUM_WORKERS:+--num_workers "$NUM_WORKERS"}
+    ${NUM_WORKERS:+--num_workers "$NUM_WORKERS"} \
+    ${PATIENT:+--patient "$PATIENT"}

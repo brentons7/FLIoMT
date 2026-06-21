@@ -17,9 +17,11 @@ if [ -z "${SERVER_IP:-}" ]; then
 fi
 
 SERVER_IP="$SERVER_IP" \
+CONFIG=configs/experiments/fl_wesad_2client.yaml \
 PARTITION_ID=0 \
-NUM_PARTITIONS=2 \
+NUM_PARTITIONS=1 \
+PATIENT=wesad_S2 \
 USE_GPU=true \
-BATCH_SIZE=8 \
+BATCH_SIZE=16 \
 NUM_WORKERS=0 \
     bash scripts/fl/start_client.sh

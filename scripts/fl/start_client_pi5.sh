@@ -16,8 +16,10 @@ if [ -z "${SERVER_IP:-}" ]; then
 fi
 
 SERVER_IP="$SERVER_IP" \
-PARTITION_ID=1 \
-NUM_PARTITIONS=2 \
+CONFIG=configs/experiments/fl_wesad_2client.yaml \
+PARTITION_ID=0 \
+NUM_PARTITIONS=1 \
+PATIENT=wesad_S3 \
 USE_GPU=false \
 BATCH_SIZE=16 \
 NUM_WORKERS=0 \
