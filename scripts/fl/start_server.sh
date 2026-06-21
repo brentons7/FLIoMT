@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-CONFIG=${CONFIG:-configs/experiments/fl_ecg_2client.yaml}
+CONFIG=${CONFIG:-configs/experiments/fl_wesad_2client.yaml}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8080}
 ROUNDS=${ROUNDS:-10}

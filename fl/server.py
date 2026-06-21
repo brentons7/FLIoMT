@@ -220,9 +220,8 @@ def _save_results(
 
     ts            = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     model_name    = cfg.get("model", {}).get("name", "unknown")
-    sensor        = cfg.get("data",  {}).get("sensor",  "unknown")
-    patient       = cfg.get("data",  {}).get("patient", "unknown")
-    experiment_id = f"{ts}_fl_{model_name}_{sensor}_{patient}"
+    experiment_id = cfg.get("experiment", {}).get("name", f"fl_{model_name}")
+    experiment_id = f"{ts}_{experiment_id}"
 
     result_dir = REPO_ROOT / "results" / experiment_id
     result_dir.mkdir(parents=True, exist_ok=True)
