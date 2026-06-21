@@ -1,0 +1,67 @@
+# FL Experiment: WESAD Stress Detection — 2 Clients
+#
+# Each client holds one WESAD subject (realistic multi-patient FL).
+# Client 0 (Orin Nano #2): wesad_S2
+# Client 1 (Pi 5):         wesad_S3
+#
+# This is a true patient-partitioned FL experiment: each device trains only
+# on its own subject's data and never shares raw signals, only model weights.
+#
+# Run preprocessing first:
+#   python -m preprocessing.wesad_pipeline
+
+experiment:
+  name: fl_wesad_2client
+  description: >
+    Federated ECG anomaly detection on WESAD stress dataset.
+    Each client holds one subject; trains on baseline, tests on stress condition.
+  mode: federated
+
+data:
+  patient: wesad_S2             # Override per device: wesad_S2 / wesad_S3
+  sensor: ecg
+  train_conditions: [baseline]
+  val_conditions: [baseline]
+  test_conditions: [stress]
+  seq_len: 100
+  step: 1
+  train_ratio: 0.7
+  val_ratio: 0.1
+
+preprocessing:
+  target_fs: 100
+  ecg:
+    bandpass_low: 0.5
+    bandpass_high: 40.0
+    filter_order: 4
+  scaler: standard
+  scaler_fit_condition: baseline
+
+model:
+  name: Transformer
+  enc_in: 1
+  c_out: 1
+  d_model: 64
+  d_ff: 128
+  n_heads: 8
+  e_layers: 2
+  dropout: 0.1
+
+training:
+  epochs: 1
+  batch_size: 16
+  learning_rate: 0.0001
+  patience: 3
+  lr_schedule: type1
+  anomaly_ratio: 1.0
+  seed: 42
+  device: auto
+
+fl:
+  enabled: true
+  server_address: "127.0.0.1:8080"
+  rounds: 10
+  min_clients: 2
+  local_epochs: 1
+  partition_strategy: temporal
+  num_partitions: 1             # No temporal split — each client already has its own subject

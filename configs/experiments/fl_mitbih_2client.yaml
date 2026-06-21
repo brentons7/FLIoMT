@@ -1,0 +1,67 @@
+# FL Experiment: MIT-BIH Arrhythmia — 2 Clients
+#
+# Each client trains on one MIT-BIH recording (one "patient").
+# Client 0 (Orin Nano #2): mitbih_100
+# Client 1 (Pi 5):         mitbih_105
+#
+# To change which recordings are used, update the patient field in each
+# device's startup script or pass --patient via CLI override.
+#
+# Run preprocessing first:
+#   python -m preprocessing.mitbih_pipeline
+
+experiment:
+  name: fl_mitbih_2client
+  description: >
+    Federated ECG anomaly detection on MIT-BIH Arrhythmia Database.
+    Each client holds one recording; trains on normal beats, tests on arrhythmia.
+  mode: federated
+
+data:
+  patient: mitbih_100           # Override per device: mitbih_100 / mitbih_105
+  sensor: ecg
+  train_conditions: [normal]
+  val_conditions: [normal]
+  test_conditions: [arrhythmia]
+  seq_len: 100
+  step: 1
+  train_ratio: 0.7
+  val_ratio: 0.1
+
+preprocessing:
+  target_fs: 100
+  ecg:
+    bandpass_low: 0.5
+    bandpass_high: 40.0
+    filter_order: 4
+  scaler: standard
+  scaler_fit_condition: normal
+
+model:
+  name: Transformer
+  enc_in: 1
+  c_out: 1
+  d_model: 64
+  d_ff: 128
+  n_heads: 8
+  e_layers: 2
+  dropout: 0.1
+
+training:
+  epochs: 1
+  batch_size: 16
+  learning_rate: 0.0001
+  patience: 3
+  lr_schedule: type1
+  anomaly_ratio: 1.0
+  seed: 42
+  device: auto
+
+fl:
+  enabled: true
+  server_address: "127.0.0.1:8080"
+  rounds: 10
+  min_clients: 2
+  local_epochs: 1
+  partition_strategy: temporal
+  num_partitions: 1             # No temporal split — each client already has its own patient
