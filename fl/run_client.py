@@ -147,7 +147,7 @@ def main() -> None:
 
     n_train = len(train_loader.dataset)
     n_val   = len(val_loader.dataset)
-    print(f"Partition {args.partition_id}/{num_partitions} | strategy={partition_strategy}")
+    print(f"Partition {args.partition_id + 1}/{num_partitions} | strategy={partition_strategy}")
     print(f"  train={n_train} windows | val={n_val} windows | batch={batch_size}")
 
     # --------------------------------------------------------------- FL client
