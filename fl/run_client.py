@@ -61,6 +61,14 @@ _MODEL_PRESETS: dict[str, dict] = {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
         "dropout": 0.1, "moving_avg": 7,
     },
+    "AnomalyTransformer": {
+        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 3,
+        "dropout": 0.1, "assoc_lambda": 3e-4,
+    },
+    "CNNAutoencoder": {
+        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 4,
+        "dropout": 0.1,
+    },
     "Nonstationary_Transformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
     },

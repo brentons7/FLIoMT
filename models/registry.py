@@ -98,6 +98,34 @@ _REGISTRY: dict[str, ModelEntry] = {
         source="tslib/models/Autoformer.py",
         notes="Series decomposition (trend + seasonal) directly relevant to HRV.",
     ),
+    "AnomalyTransformer": ModelEntry(
+        module="models.AnomalyTransformer",
+        class_name="AnomalyTransformer",
+        tier=1,
+        edge_compatible=True,
+        layer_deps=["Embed"],
+        source="Xu et al., ICLR 2022 — 'Anomaly Transformer'",
+        notes=(
+            "Replaces softmax attention with AnomalyAttention: learned Gaussian prior "
+            "per head alongside series attention. Symmetric KL (association discrepancy) "
+            "is stored in model.assoc_loss during training and added to MSE by the FL "
+            "client. assoc_lambda (default 3e-4) controls its weight."
+        ),
+    ),
+    "CNNAutoencoder": ModelEntry(
+        module="models.CNNAutoencoder",
+        class_name="CNNAutoencoder",
+        tier=1,
+        edge_compatible=True,
+        layer_deps=[],
+        source="Standard dilated residual 1D CNN autoencoder",
+        notes=(
+            "No attention, no CUDA ops — fastest model on Pi CPU. "
+            "Exponentially dilated Conv1d blocks preserve temporal resolution. "
+            "RF at e_layers=4, 100 Hz: ~31 samples (310 ms) — spans PQRST complex. "
+            "d_ff and n_heads are unused; only d_model, e_layers, dropout matter."
+        ),
+    ),
     "Nonstationary_Transformer": ModelEntry(
         module="models.Nonstationary_Transformer",
         class_name="Nonstationary_Transformer",

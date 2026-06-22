@@ -99,6 +99,9 @@ class PhysioAnomalyClient(fl.client.NumPyClient):
                 optimizer.zero_grad()
                 outputs = self.model(batch_x)
                 loss = self.criterion(outputs, batch_x)
+                assoc = getattr(self.model, "assoc_loss", None)
+                if assoc is not None:
+                    loss = loss + assoc
                 loss.backward()
                 optimizer.step()
                 total_samples += len(batch_x)
