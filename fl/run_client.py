@@ -43,9 +43,6 @@ from fl.partition import make_loader
 # Default architecture params per model — used when no YAML is provided.
 # CLI args always override these.
 _MODEL_PRESETS: dict[str, dict] = {
-    "Transformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
-    },
     "iTransformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
     },
@@ -57,23 +54,9 @@ _MODEL_PRESETS: dict[str, dict] = {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
         "dropout": 0.1, "top_k": 5, "num_kernels": 6,
     },
-    "Autoformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
-        "dropout": 0.1, "moving_avg": 25,
-    },
-    "AnomalyTransformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 3,
-        "dropout": 0.1, "assoc_lambda": 3e-4,
-    },
     "CNNAutoencoder": {
         "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 4,
         "dropout": 0.1,
-    },
-    "Nonstationary_Transformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
-    },
-    "DLinear": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
     },
 }
 _DEFAULT_ARCH: dict = {"d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1}
@@ -107,7 +90,7 @@ def parse_args() -> argparse.Namespace:
 
     # ── Model ─────────────────────────────────────────────────────────────────
     p.add_argument("--model",   type=str, default=None,
-                   help="Model name from registry, e.g. PatchTST, Transformer")
+                   help="Model name from registry: PatchTST, CNNAutoencoder, TimesNet, iTransformer")
 
     # ── Architecture overrides ────────────────────────────────────────────────
     p.add_argument("--d_model",      type=int,   default=None)
@@ -119,7 +102,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--stride",       type=int,   default=None, help="PatchTST")
     p.add_argument("--top_k",        type=int,   default=None, help="TimesNet")
     p.add_argument("--num_kernels",  type=int,   default=None, help="TimesNet")
-    p.add_argument("--moving_avg",   type=int,   default=None, help="Autoformer")
 
     return p.parse_args()
 
@@ -133,7 +115,7 @@ def _build_config(args: argparse.Namespace) -> dict:
             config = yaml.safe_load(f) or {}
 
     # Resolve model name (CLI > YAML > default)
-    model_name = args.model or config.get("model", {}).get("name", "Transformer")
+    model_name = args.model or config.get("model", {}).get("name", "PatchTST")
 
     # Architecture: defaults → preset → YAML model section → CLI overrides
     arch = {**_DEFAULT_ARCH, **_MODEL_PRESETS.get(model_name, {})}

@@ -35,14 +35,16 @@ preprocessing:
   scaler_fit_condition: resting
 
 model:
-  name: Transformer              # Baseline; swap for PatchTST, TimesNet, etc.
+  name: PatchTST
   enc_in: 1
   c_out: 1
-  d_model: 64
-  d_ff: 128
+  d_model: 128
+  d_ff: 256
   n_heads: 8
-  e_layers: 2
+  e_layers: 3
   dropout: 0.1
+  patch_len: 16
+  stride: 8
 
 training:
   epochs: 1                      # Local epochs per FL round (keep low: 1–3)

@@ -1,4 +1,4 @@
-"""Reversible instance normalization used by TimeMixer."""
+"""Reversible instance normalization."""
 
 import torch
 import torch.nn as nn

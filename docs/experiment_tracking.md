@@ -62,12 +62,14 @@ to reproduce the experiment from scratch.
       "scaler_fit_condition": "resting"
     },
     "model": {
-      "name": "Transformer",
-      "d_model": 64,
+      "name": "PatchTST",
+      "d_model": 128,
       "n_heads": 8,
-      "e_layers": 1,
-      "d_ff": 128,
-      "dropout": 0.1
+      "e_layers": 3,
+      "d_ff": 256,
+      "dropout": 0.1,
+      "patch_len": 16,
+      "stride": 8
     },
     "training": {
       "epochs": 10,
@@ -262,11 +264,11 @@ The sweep script writes an additional `sweep_summary.json` at the sweep level:
 ```json
 {
   "sweep_id": "20260616_143022_sweep_ecg_brenton",
-  "models": ["Transformer", "iTransformer", "PatchTST", ...],
-  "best_model": "iTransformer",
-  "best_f1": 0.912,
+  "models": ["PatchTST", "CNNAutoencoder", "TimesNet", "iTransformer"],
+  "best_model": "PatchTST",
+  "best_auroc": 0.988,
   "results": [
-    {"model": "Transformer", "f1": 0.865, "experiment_id": "..."},
+    {"model": "PatchTST", "auroc": 0.988, "experiment_id": "..."},
     ...
   ]
 }

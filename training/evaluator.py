@@ -5,8 +5,11 @@ Supports two evaluation modes:
 
 1. Labeled mode (POC / benchmark):
    Uses condition as a proxy anomaly label. Computes threshold via percentile
-   of combined train+test reconstruction energy, then reports Accuracy,
-   Precision, Recall, F1 with the Point-Adjust protocol.
+   of combined train+test reconstruction energy, then reports:
+     - AUROC, AUPRC  (threshold-independent — primary ranking metrics)
+     - F1/precision/recall with Point-Adjust protocol (PA — literature standard)
+     - F1/precision/recall without Point-Adjust (raw — honest baseline)
+     - Score statistics: mean/std for normal and anomaly groups, delta, separation ratio
 
 2. Unlabeled mode (real deployment):
    No ground-truth labels. Reports reconstruction score distributions,
@@ -22,7 +25,12 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    precision_recall_fscore_support,
+    roc_auc_score,
+)
 from torch.utils.data import DataLoader
 
 from training.utils import adjustment
@@ -54,7 +62,7 @@ class Evaluator:
         anomaly_ratio: float = 1.0,
         device: torch.device | None = None,
         result_dir: str | Path | None = None,
-        train_label: str = "resting",
+        train_label: str = "baseline",
     ) -> None:
         self.model = model
         self.train_loader = train_loader
@@ -124,44 +132,94 @@ class Evaluator:
 
     def evaluate_labeled(
         self,
+        train_scores: np.ndarray,
         test_scores: np.ndarray,
         threshold: float,
         test_labels: np.ndarray,
     ) -> dict[str, float]:
         """
-        Evaluate with ground-truth or proxy labels using the PA protocol.
+        Evaluate with ground-truth or proxy labels.
+
+        Computes threshold-independent metrics (AUROC, AUPRC), PA-adjusted
+        classification metrics (literature standard), raw classification metrics
+        (honest baseline without PA inflation), and score distribution statistics.
 
         For POC: any condition != train_label is treated as anomalous (label=1).
 
         Args:
-            test_scores:  Per-window anomaly scores [N]
+            train_scores: Per-window anomaly scores on normal (training) data [N]
+            test_scores:  Per-window anomaly scores on test data [N]
             threshold:    Decision threshold
             test_labels:  Condition string labels [N] — or binary int labels
-
-        Returns:
-            Dict with: accuracy, precision, recall, f1, threshold
         """
-        # Convert condition strings to binary labels if needed
+        # Convert condition strings to binary labels
         if test_labels.dtype.kind in ("U", "S", "O"):
             gt = (test_labels != self.train_label).astype(int)
         else:
             gt = test_labels.astype(int)
 
-        pred = (test_scores > threshold).astype(int)
+        # ── Threshold-independent metrics ──────────────────────────────────────
+        # WESAD and similar datasets have a test set that is 100% anomalous
+        # (stress-only), so sklearn can't compute AUROC from test labels alone.
+        # Solution: use train_scores as the normal class reference and concatenate
+        # with test_scores. This is the correct framing for reconstruction-based AD:
+        # "how well does reconstruction error separate normal windows from anomalous ones?"
+        n_pos = gt.sum()
+        n_neg = len(gt) - n_pos
+        if n_pos > 0:
+            auroc_scores = np.concatenate([train_scores, test_scores])
+            auroc_labels = np.concatenate([
+                np.zeros(len(train_scores), dtype=int),
+                gt,  # preserves mixed test sets; all-anomaly test sets work too
+            ])
+            auroc = float(roc_auc_score(auroc_labels, auroc_scores))
+            auprc = float(average_precision_score(auroc_labels, auroc_scores))
+        else:
+            auroc = auprc = float("nan")
 
-        gt, pred = adjustment(gt, pred)
-
-        accuracy = float(accuracy_score(gt, pred))
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            gt, pred, average="binary", zero_division=0
+        # ── Raw classification (no Point-Adjust) ──────────────────────────────
+        pred_raw = (test_scores > threshold).astype(int)
+        prec_r, rec_r, f1_r, _ = precision_recall_fscore_support(
+            gt, pred_raw, average="binary", zero_division=0,
         )
 
+        # ── PA-adjusted classification (literature standard) ──────────────────
+        pred_pa = (test_scores > threshold).astype(int)
+        gt_adj, pred_pa = adjustment(gt.copy(), pred_pa)
+        prec_pa, rec_pa, f1_pa, _ = precision_recall_fscore_support(
+            gt_adj, pred_pa, average="binary", zero_division=0,
+        )
+
+        # ── Score distribution statistics ─────────────────────────────────────
+        anomaly_scores = test_scores[gt == 1] if n_pos > 0 else np.array([float("nan")])
+        normal_scores  = train_scores  # train set is purely normal by construction
+
+        mean_normal   = float(np.mean(normal_scores))
+        std_normal    = float(np.std(normal_scores))
+        mean_anomaly  = float(np.mean(anomaly_scores))
+        score_delta   = mean_anomaly - mean_normal
+        # How many normal-score standard deviations separate the two distributions
+        score_sep     = score_delta / std_normal if std_normal > 0 else float("nan")
+
         return {
-            "threshold": round(threshold, 8),
-            "accuracy": round(accuracy, 6),
-            "precision": round(float(precision), 6),
-            "recall": round(float(recall), 6),
-            "f1": round(float(f1), 6),
+            "threshold":      round(threshold, 8),
+            # Threshold-independent (primary comparison metrics)
+            "auroc":          round(auroc, 6),
+            "auprc":          round(auprc, 6),
+            # PA-adjusted (matches published literature)
+            "f1_pa":          round(float(f1_pa), 6),
+            "precision_pa":   round(float(prec_pa), 6),
+            "recall_pa":      round(float(rec_pa), 6),
+            # Raw (honest, no PA inflation)
+            "f1_raw":         round(float(f1_r), 6),
+            "precision_raw":  round(float(prec_r), 6),
+            "recall_raw":     round(float(rec_r), 6),
+            # Score distributions
+            "mean_normal_score":  round(mean_normal, 8),
+            "std_normal_score":   round(std_normal, 8),
+            "mean_anomaly_score": round(mean_anomaly, 8),
+            "score_delta":        round(score_delta, 8),
+            "score_separation":   round(score_sep, 4),
         }
 
     def evaluate_unlabeled(
@@ -215,7 +273,7 @@ class Evaluator:
         n_test = len(test_scores)
 
         if labeled:
-            metrics = self.evaluate_labeled(test_scores, threshold, test_labels)
+            metrics = self.evaluate_labeled(train_scores, test_scores, threshold, test_labels)
             metrics["evaluation_mode"] = "labeled"
         else:
             metrics = self.evaluate_unlabeled(train_scores, test_scores, threshold)
@@ -225,8 +283,9 @@ class Evaluator:
         metrics["n_test_windows"] = n_test
 
         print(
-            "Accuracy={accuracy:.4f}  Precision={precision:.4f}  "
-            "Recall={recall:.4f}  F1={f1:.4f}".format(**metrics)
+            "AUROC={auroc:.4f}  AUPRC={auprc:.4f}  "
+            "F1(PA)={f1_pa:.4f}  F1(raw)={f1_raw:.4f}  "
+            "Score sep={score_separation:.2f}σ".format(**metrics)
             if labeled
             else "Alert rate={alert_rate:.4f}  Score delta={score_delta:.6f}".format(**metrics)
         )

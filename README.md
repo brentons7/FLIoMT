@@ -1,186 +1,88 @@
 # FLIoMT
 
-Federated learning for physiological anomaly detection on IoMT edge devices.
+Federated learning system for real-time physiological anomaly detection on IoMT edge devices. The goal is post-discharge cardiac patient monitoring: devices train locally on each patient's normal baseline and a central server aggregates model weights without raw data leaving the device.
 
-## Research Goal
+## Hardware
 
-FLIoMT develops a federated learning system where wearable biosensors on
-discharged high-risk patients continuously monitor physiological signals. Each
-patient's device trains a local anomaly detection model on that patient's
-normal baseline. A federated server aggregates model updates across patients
-without any raw data leaving the device.
+| Device | Role |
+|---|---|
+| Orin Nano #1 | FL server — FedAvg aggregation only |
+| Orin Nano #2 | FL client — CUDA training |
+| Raspberry Pi 5 | FL client — CPU-only, real-time inference |
 
-Current stage: proof-of-concept using a single-patient ECG/PPG dataset
-collected under controlled exercise conditions (resting, light activity,
-post-exercise). The exercise conditions serve as a proxy for physiological
-deviation in the POC evaluation.
+**Sensors on Pi 5:** AD8232 (ECG, 1 channel) + MAX30102 (PPG, red + IR), sampled at ~100 Hz.
 
-## Sensors
+## Models
 
-| Sensor | Hardware | Signal | Channels |
-|--------|----------|--------|----------|
-| ECG | AD8232 + ADS1115 ADC | Cardiac electrical | 1 (voltage) |
-| PPG | MAX30102 | Cardiac optical | 2 (red, IR) |
+Reconstruction-based unsupervised anomaly detection: train on normal signal, anomaly score = per-window MSE(x, x̂). Threshold set at `percentile(train_scores, 100 − anomaly_ratio)`.
 
-Both sensors are sampled via Raspberry Pi at ~100 Hz (software-timed).
+| Model | Params | CPU ms/win | Notes |
+|---|---|---|---|
+| **PatchTST** | 553K | 0.9 | Primary FL candidate. AUROC 0.988 on MIT-BIH. Patch-as-token captures QRS morphology. |
+| **CNNAutoencoder** | 12.6K | 0.3 | Pi 5 candidate. Fastest and smallest (0.05 MB). Dilated Conv1d, 310ms receptive field. |
+| **TimesNet** | 9.4M | 15.0 | Orin Nano candidate. AUROC 0.970. 37.5 MB — too heavy for Pi 5. |
+| **iTransformer** | 80K | 0.4 | Reserved for ECG+PPG multi-channel experiments (enc_in=2). |
 
-## Approach
-
-All models use **reconstruction-based unsupervised anomaly detection**:
-
-1. Train on the patient's resting baseline. Loss = `MSE(x, model(x))`.
-2. Score = per-timestep reconstruction error at inference.
-3. Alert when score exceeds `percentile(train_scores, 100 - anomaly_ratio)`.
-
-No labels are required at training or deployment time.
-
-## Quick Start
-
-### Preprocessing
-
-```bash
-# Preprocess all sessions registered in data/manifests/sessions.csv
-bash scripts/preprocess.sh
-```
-
-### Centralized training
-
-```bash
-python scripts/train.py --config configs/experiments/poc_ecg_transformer.yaml
-```
-
-### Model sweep
-
-```bash
-python scripts/train.py --config configs/experiments/poc_ecg_model_sweep.yaml
-```
-
-### Federated training
-
-Orin Nano #1 runs the server only. Start the server first, then connect both
-clients.
-
-```bash
-# 1. On Orin Nano #1 — start the server:
-bash scripts/fl/start_server.sh
-# Prints: "Clients should connect to SERVER_IP=<ip>"
-
-# 2. Start each client — replace <server-ip> with the IP printed above.
-#    Run on their respective devices.
-
-# Orin Nano #2 (GPU, partition 0):
-SERVER_IP=<server-ip> bash scripts/fl/start_client_orin.sh
-
-# Raspberry Pi 5 (CPU, partition 1):
-SERVER_IP=<server-ip> bash scripts/fl/start_client_pi5.sh
-```
-
-Key environment overrides for the server:
-
-```bash
-ROUNDS=10 MIN_CLIENTS=2 LOCAL_EPOCHS=1 LR=0.0001 PORT=8080 bash scripts/fl/start_server.sh
-```
+Benchmarked on MIT-BIH record 213 (train: normal sinus, test: annotated arrhythmia). AUROC and AUPRC are the primary metrics — threshold-independent and meaningful for imbalanced detection tasks.
 
 ## Repository Structure
 
 ```
 FLIoMT/
-├── acquisition/          # Sensor recording scripts (run on Pi)
-├── preprocessing/        # Signal processing pipelines
-├── datasets/             # PyTorch Dataset classes
-├── models/               # Anomaly detection model implementations
+├── acquisition/          # Sensor recording scripts (run on Pi 5)
+├── preprocessing/        # ECG/PPG signal processing pipelines
+├── datasets/             # PyTorch Dataset and DataLoader builders
+├── models/               # Model implementations
 │   ├── registry.py       # Lazy model loader
-│   └── layers/           # Shared layer implementations
-├── training/             # Trainer, Evaluator, utilities
+│   └── layers/           # Shared layers (Embed, Attention, Conv, etc.)
+├── training/             # Trainer, Evaluator, EarlyStopping, utilities
 ├── fl/                   # Flower federated learning stack
 │   ├── server.py         # FedAvg aggregation server
 │   ├── client.py         # PhysioAnomalyClient (fit + evaluate)
-│   ├── run_client.py     # Client entry point (loads config, connects)
+│   ├── run_client.py     # Client entry point
 │   └── partition.py      # Temporal / patient / condition partitioning
 ├── configs/
 │   ├── models/           # Per-model hyperparameter defaults
-│   └── experiments/      # Full experiment configurations
-├── scripts/
-│   ├── train.py          # Centralized training entry point
-│   ├── preprocess.sh
-│   └── fl/
-│       ├── start_server.sh
-│       ├── start_client.sh        # Generic client (all params via env)
-│       ├── start_client_orin.sh   # Orin Nano #2 preset (client)
-│       └── start_client_pi5.sh    # Raspberry Pi 5 preset
+│   └── experiments/      # FL experiment configurations
+├── benchmark.py          # Centralized model benchmark (no FL required)
 ├── data/
-│   ├── raw/
-│   │   ├── ecg/          # Raw ECG CSVs
-│   │   └── ppg/          # Raw PPG CSVs
+│   ├── raw/              # Raw sensor CSVs
 │   ├── processed/        # Preprocessed .npy arrays (git-ignored)
-│   └── manifests/        # sessions.csv registry
-└── results/              # Experiment outputs
-    └── {experiment_id}/
-        ├── metadata.json # Git hash + full config (git-tracked)
-        └── metrics.json  # Evaluation results (git-tracked)
+│   └── manifests/        # sessions.csv data registry
+└── results/
+    └── benchmarks/       # benchmark.py JSON outputs
 ```
 
-## Models
+## Quick Start
 
-23 anomaly-detection-capable models across 3 migration tiers. All implement
-`model(x: Tensor[B,L,C]) → x_hat: Tensor[B,L,C]`.
-
-| Tier | Models | Status |
-|------|--------|--------|
-| 1 | Transformer, iTransformer, PatchTST, KANAD, Mamba2, Autoformer, NonStationary_Transformer, DLinear | Ported |
-| 2 | TimeMixer, SegRNN, TimesNet, Informer, Crossformer, FEDformer, ETSformer, Reformer, FiLM, MICN | Partial / planned |
-| 3 | MambaSimple, LightTS, Crossformer, Pyraformer, TimeFilter, MSGNet | Planned |
-
-See `docs/model_inventory.md` for full details including layer dependencies,
-edge compatibility, and notes on unsupported models.
-
-## Federated Learning
-
-FL uses [Flower](https://flower.ai/) with FedAvg. The server aggregates only
-model weights — no patient data is transmitted.
-
-**Partition strategies** (set in experiment config):
-
-| Strategy | Use case |
-|----------|----------|
-| `temporal` | Single patient, N time windows — current POC |
-| `patient` | One patient per client — multi-patient deployment |
-| `condition` | One activity condition per client |
-
-## Experiment Tracking
-
-Every run produces `metadata.json` (written at start) and `metrics.json`
-(written at end). The metadata includes:
-
-- Git commit hash and dirty state
-- Complete experiment configuration
-- Python, PyTorch, Flower versions
-- Platform and hostname
-
-Results are queryable with `jq`:
-
+**Benchmark all models (no FL required):**
 ```bash
-# Compare F1 across all experiments
-jq -r '[.experiment_id, .f1] | @tsv' results/*/metrics.json | sort -k2 -rn
+source venv/bin/activate
+python benchmark.py --patient mitbih_213 --train-conditions normal --test-conditions arrhythmia
 ```
 
-See `docs/experiment_tracking.md` for the full schema and query patterns.
+**Run a specific model:**
+```bash
+python benchmark.py --models PatchTST CNNAutoencoder --patient mitbih_213 \
+  --train-conditions normal --test-conditions arrhythmia --epochs 50
+```
 
-## Documentation
+**Federated training (3 devices):**
+```bash
+# 1. Orin Nano #1 — start server
+bash scripts/fl/start_server.sh
 
-| Document | Contents |
-|----------|----------|
-| `docs/architecture.md` | System diagram, module map, anomaly detection approach |
-| `docs/data_flow.md` | End-to-end data flow from sensor to metrics |
-| `docs/experiment_tracking.md` | metadata.json and metrics.json schemas |
-| `docs/model_inventory.md` | All models, tiers, layer deps, unsupported models |
-| `results/README.md` | Results directory structure and git tracking policy |
+# 2. Orin Nano #2 — GPU client (partition 0)
+SERVER_IP=<ip> bash scripts/fl/start_client_orin.sh
 
-## Source Repository
+# 3. Raspberry Pi 5 — CPU client (partition 1)
+SERVER_IP=<ip> bash scripts/fl/start_client_pi5.sh
+```
 
-All model implementations, FL code, and training infrastructure are ported
-from `../tslib/`. The tslib repository is read-only; FLIoMT is the migration
-target. Do not modify tslib.
+Server environment overrides:
+```bash
+ROUNDS=50 MIN_CLIENTS=2 LOCAL_EPOCHS=1 LR=0.0001 PORT=8080 bash scripts/fl/start_server.sh
+```
 
 ## Requirements
 
@@ -188,15 +90,7 @@ target. Do not modify tslib.
 pip install -r requirements.txt
 ```
 
-Works on any device (Xavier, Raspberry Pi, workstation). No version pins so pip
-selects wheels compatible with the Python version on the target device (3.8–3.13).
-
-Raspberry Pi sensor acquisition packages are not in requirements.txt — they only
-install on Pi and are only needed for data collection:
-
+Works on all three devices (Python 3.8–3.13). Pi 5 sensor packages are separate:
 ```bash
 pip install adafruit-circuitpython-ads1x15 RPi.GPIO smbus2
 ```
-
-Mamba2 (Tier 1) is pure PyTorch — no additional packages, runs on all devices.
-MambaSimple (Tier 3) requires the `mamba_ssm` package with CUDA.
