@@ -90,7 +90,7 @@ ROUNDS=50 MIN_CLIENTS=2 LOCAL_EPOCHS=1 LR=0.0001 PORT=8080 bash scripts/fl/start
 pip install -r requirements.txt
 ```
 
-Works on all three devices (Python 3.8–3.13). Pi 5 sensor packages are separate:
+Works on all three devices (Python 3.10+). Pi 5 sensor packages are separate:
 ```bash
 pip install adafruit-circuitpython-ads1x15 RPi.GPIO smbus2
 ```
