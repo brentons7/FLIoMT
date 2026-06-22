@@ -59,7 +59,7 @@ _MODEL_PRESETS: dict[str, dict] = {
     },
     "Autoformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
-        "dropout": 0.1, "moving_avg": 25,
+        "dropout": 0.1, "moving_avg": 7,
     },
     "Nonstationary_Transformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
