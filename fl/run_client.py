@@ -59,7 +59,7 @@ _MODEL_PRESETS: dict[str, dict] = {
     },
     "Autoformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
-        "dropout": 0.1, "moving_avg": 7,
+        "dropout": 0.1, "moving_avg": 25,
     },
     "AnomalyTransformer": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 3,

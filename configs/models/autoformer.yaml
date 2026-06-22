@@ -1,8 +1,10 @@
 # Autoformer — default hyperparameters for anomaly detection
 # Source: tslib/scripts/anomaly_detection/MSL/Autoformer.sh
 # Tier 1 | Edge-compatible: yes
-# Note: moving_avg=7 at 100 Hz = 70ms kernel — short enough to preserve the QRS complex.
-#       The original TSLib default of 25 (250ms) destroyed cardiac spikes for seq_len=100.
+# Note: moving_avg=25 defines the trend component. The encoder processes the *seasonal*
+#       residual (signal minus trend), so a larger moving_avg puts more of the cardiac
+#       waveform (QRS, P, T waves) into the seasonal component the encoder actually sees.
+#       Reducing moving_avg starves the encoder — confirmed experimentally (0.239 → 0.525).
 
 model:
   name: Autoformer
@@ -11,5 +13,5 @@ model:
   e_layers: 2
   d_ff: 128
   dropout: 0.1
-  moving_avg: 7      # Moving average window for series decomposition
+  moving_avg: 25     # Moving average window for series decomposition
   factor: 1          # Autocorrelation factor
