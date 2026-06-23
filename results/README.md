@@ -2,6 +2,18 @@
 
 Each experiment run creates a subdirectory here named by experiment ID.
 
+## Completed FL Experiments
+
+| Experiment ID | Model | Notes |
+|---------------|-------|-------|
+| 20260622_213419_fl_PatchTST | PatchTST | Baseline — 100r, uniform hyperparams, seq_len=100 |
+| 20260623_001440_fl_CNNAutoencoder | CNNAutoencoder | Baseline — 100r, uniform hyperparams, seq_len=100 |
+| 20260623_002919_fl_iTransformer | iTransformer | Baseline — 100r, uniform hyperparams; **detection failure** on c1 |
+| 20260623_014236_fl_TimesNet | TimesNet | Baseline — excluded; 350ms CPU, 15.1 GB comm |
+| 20260623_133450_fl_PatchTST | PatchTST | Tuned — 150r, e_layers=4, seq_len=128 |
+| 20260623_133937_fl_CNNAutoencoder | CNNAutoencoder | Tuned — 100r, e_layers=5, seq_len=128 |
+| 20260623_135731_fl_iTransformer | iTransformer | Tuned — 200r, flat LR, local_epochs=2; AUROC 0.999/0.995 |
+
 ## Directory Layout
 
 ```

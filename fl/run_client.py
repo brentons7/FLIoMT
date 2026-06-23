@@ -93,7 +93,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--sensor",  type=str, default=None,
                    help="Sensor type: ecg | ppg (default: ecg)")
     p.add_argument("--seq_len", type=int, default=None,
-                   help="Sequence window length (default: 100)")
+                   help="Sequence window length (default: 128)")
 
     # ── Model ─────────────────────────────────────────────────────────────────
     p.add_argument("--model",   type=str, default=None,
@@ -146,7 +146,7 @@ def _build_config(args: argparse.Namespace) -> dict:
     if args.seq_len  is not None: data["seq_len"]  = args.seq_len
     data.setdefault("patient",           "mitbih_213")
     data.setdefault("sensor",            "ecg")
-    data.setdefault("seq_len",           100)
+    data.setdefault("seq_len",           128)
     data.setdefault("step",              data["seq_len"] // 2)
     data.setdefault("train_conditions",  ["normal"])
     data.setdefault("val_conditions",    ["normal"])
