@@ -42,13 +42,13 @@ from models.registry import ModelRegistry
 from training.evaluator import Evaluator
 from training.utils import EarlyStopping, adjust_learning_rate, measure_edge
 
-# ── Model presets (same as fl/run_client.py — edit both if you change these) ──
+# ── Model presets (keep in sync with fl/run_client.py _MODEL_PRESETS) ──────────
 _MODEL_PRESETS: dict[str, dict] = {
     "iTransformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
+        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 3, "dropout": 0.1,
     },
     "PatchTST": {
-        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 3,
+        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 4,
         "dropout": 0.1, "patch_len": 16, "stride": 8,
     },
     "TimesNet": {
@@ -56,7 +56,7 @@ _MODEL_PRESETS: dict[str, dict] = {
         "dropout": 0.1, "top_k": 5, "num_kernels": 6,
     },
     "CNNAutoencoder": {
-        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 4, "dropout": 0.1,
+        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 6, "dropout": 0.1,
     },
 }
 _DEFAULT_PRESET: dict = {
@@ -307,13 +307,13 @@ def main() -> None:
                         help="Models to benchmark. Omit to run all.")
 
     # ── Data ──────────────────────────────────────────────────────────────────
-    parser.add_argument("--patient",          default="wesad_S2")
+    parser.add_argument("--patient",          default="mitbih_213")
     parser.add_argument("--sensor",           default="ecg")
-    parser.add_argument("--seq-len",          type=int, default=100, dest="seq_len")
+    parser.add_argument("--seq-len",          type=int, default=128, dest="seq_len")
     parser.add_argument("--enc-in",           type=int, default=1,   dest="enc_in")
-    parser.add_argument("--train-conditions", nargs="+", default=["baseline"],
+    parser.add_argument("--train-conditions", nargs="+", default=["normal"],
                         dest="train_conditions")
-    parser.add_argument("--test-conditions",  nargs="+", default=["stress"],
+    parser.add_argument("--test-conditions",  nargs="+", default=["arrhythmia"],
                         dest="test_conditions")
 
     # ── Training ──────────────────────────────────────────────────────────────
