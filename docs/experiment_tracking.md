@@ -17,7 +17,7 @@ git-ignored but are fully reproducible from `metadata.json`.
 
 Format: `{YYYYMMDD}_{HHMMSS}_{model_name}_{sensor}_{patient}`
 
-Example: `20260616_143022_Transformer_ecg_brenton`
+Example: `20260616_143022_PatchTST_ecg_mitbih_213`
 
 The experiment ID becomes the subdirectory name under `results/` and is
 embedded in both JSON files. It is generated once at run start and propagated
@@ -32,7 +32,7 @@ to reproduce the experiment from scratch.
 
 ```json
 {
-  "experiment_id": "20260616_143022_Transformer_ecg_brenton",
+  "experiment_id": "20260616_143022_PatchTST_ecg_mitbih_213",
   "timestamp": "2026-06-16T14:30:22Z",
 
   "git_commit": "abc123def456abc123def456abc123def456abc1",
@@ -41,16 +41,16 @@ to reproduce the experiment from scratch.
 
   "config": {
     "experiment": {
-      "name": "poc_ecg_transformer",
+      "name": "poc_ecg_patchtst",
       "mode": "centralized"
     },
     "data": {
-      "patient": "brenton",
+      "patient": "mitbih_213",
       "sensor": "ecg",
-      "train_condition": "resting",
-      "test_condition": "post_exercise",
+      "train_conditions": ["normal"],
+      "test_conditions": ["arrhythmia"],
       "seq_len": 100,
-      "step": 1,
+      "step": 50,
       "train_ratio": 0.7,
       "val_ratio": 0.1
     },
@@ -59,7 +59,7 @@ to reproduce the experiment from scratch.
       "bandpass_low": 0.5,
       "bandpass_high": 40.0,
       "bandpass_order": 4,
-      "scaler_fit_condition": "resting"
+      "scaler_fit_condition": "normal"
     },
     "model": {
       "name": "PatchTST",
@@ -108,20 +108,21 @@ Written at **run end** (after evaluation completes).
 
 ```json
 {
-  "experiment_id": "20260616_143022_Transformer_ecg_brenton",
+  "experiment_id": "20260616_143022_PatchTST_ecg_mitbih_213",
 
   "threshold": 0.0423,
   "anomaly_ratio": 1.0,
 
-  "accuracy": 0.8712,
-  "precision": 0.8234,
-  "recall": 0.9102,
-  "f1": 0.8648,
+  "auroc": 0.9882,
+  "auprc": 0.9741,
+  "f1_pa": 0.9512,
+  "f1_raw": 0.8934,
 
-  "mean_train_score": 0.0181,
-  "mean_test_score": 0.0534,
-  "score_delta": 0.0353,
-  "alert_rate": 0.3021,
+  "mean_normal_score": 0.0181,
+  "std_normal_score": 0.0042,
+  "mean_anomaly_score": 0.0812,
+  "score_delta": 0.0631,
+  "score_separation": 15.0,
 
   "evaluation_mode": "labeled",
 
@@ -134,10 +135,25 @@ Written at **run end** (after evaluation completes).
 }
 ```
 
+### Field definitions
+
+| Field | Description |
+|---|---|
+| `auroc` | Area Under ROC Curve — primary ranking metric, threshold-independent |
+| `auprc` | Area Under Precision-Recall Curve — preferred when anomalies are rare |
+| `f1_pa` | F1 with Point-Adjust protocol (matches published literature; inflated) |
+| `f1_raw` | F1 without Point-Adjust (honest baseline) |
+| `mean_normal_score` | Mean reconstruction MSE on normal (train) windows |
+| `std_normal_score` | Standard deviation of normal reconstruction scores |
+| `mean_anomaly_score` | Mean reconstruction MSE on arrhythmia (test) windows |
+| `score_delta` | `mean_anomaly_score − mean_normal_score` |
+| `score_separation` | `score_delta / std_normal_score` — σ units between distributions |
+
 ### Evaluation modes
 
-**labeled**: Uses exercise condition as proxy anomaly ground truth. Computes
-Accuracy, Precision, Recall, F1 via Point-Adjust protocol. POC only.
+**labeled**: Uses arrhythmia condition as anomaly ground truth (MIT-BIH
+annotation-derived). Computes AUROC, AUPRC, F1(PA), F1(raw). POC and
+benchmark mode.
 
 **unlabeled**: No ground truth. Reports score distribution shift and alert rate.
 Intended for real deployment where no condition labels are available.
@@ -152,7 +168,7 @@ no local data and cannot evaluate the model. Instead, `fl/server.py` writes
 
 ```json
 {
-  "experiment_id": "20260617_143022_fl_Transformer_ecg_brenton",
+  "experiment_id": "20260617_143022_fl_PatchTST",
   "timestamp": "2026-06-17T14:30:22Z",
 
   "config": { "model": {...}, "data": {...}, "training": {...}, "fl": {...} },
@@ -165,28 +181,82 @@ no local data and cannot evaluate the model. Instead, `fl/server.py` writes
     "learning_rate": 0.0001
   },
 
+  "model_size": {
+    "n_params": 553216,
+    "param_mb": 2.109
+  },
+
+  "timing": {
+    "total_seconds": 312.4,
+    "avg_round_seconds": 31.2,
+    "min_round_seconds": 28.1,
+    "max_round_seconds": 45.3,
+    "avg_client_fit_seconds": 24.7
+  },
+
+  "communication": {
+    "avg_round_mb": 2.84,
+    "total_mb": 28.4
+  },
+
   "round_history": [
-    {"round": 1, "val_loss": 0.02341},
-    {"round": 2, "val_loss": 0.01987},
+    {
+      "round": 1,
+      "val_loss": 0.023410,
+      "round_wall_seconds": 45.3,
+      "comm_total_mb": 2.84,
+      "n_clients_fit": 2,
+      "client_fit_times_seconds": [38.1, 42.3],
+      "avg_client_fit_seconds": 40.2,
+      "client_eval_times_seconds": [2.1, 2.4],
+      "avg_client_eval_seconds": 2.25
+    },
     ...
-    {"round": 10, "val_loss": 0.00891}
+    {
+      "round": 10,
+      "val_loss": 0.008910
+    }
   ],
 
-  "final_val_loss": 0.00891,
+  "final_val_loss": 0.008910,
   "best_round": 8,
-  "best_val_loss": 0.00863,
-  "total_time_seconds": 312.4
+  "best_val_loss": 0.008630,
+
+  "detection": [
+    {
+      "val_loss": 0.008910,
+      "eval_time_seconds": 2.1,
+      "auroc": 0.9882,
+      "auprc": 0.9741,
+      "f1_pa": 0.9512,
+      "f1_raw": 0.8934,
+      "score_separation": 15.02,
+      "score_delta": 0.0631,
+      "mean_normal_score": 0.0181,
+      "mean_anomaly_score": 0.0812,
+      "cpu_latency_ms": 0.912,
+      "gpu_throughput_wps": 48200
+    },
+    {
+      "auroc": 0.9743,
+      "auprc": 0.9610,
+      "f1_pa": 0.9301,
+      "f1_raw": 0.8712,
+      "score_separation": 12.8,
+      "cpu_latency_ms": 0.934,
+      "gpu_throughput_wps": 0
+    }
+  ]
 }
 ```
 
-The server also prints a formatted terminal summary with a bar chart of
-per-round val_loss as soon as all rounds finish.
+The `detection` array has one entry per client (in the order clients reported).
+It is `null` if no clients returned detection metrics (final round failure).
 
-`val_loss` is a weighted average of each client's local validation reconstruction
-error (MSE), weighted by number of validation samples. It measures how well the
-global model reconstructs the normal baseline on held-out data — lower is better.
-It does not directly give F1 or precision/recall; those require labeled evaluation
-on the test set, which is a separate step (see `training/evaluator.py`).
+`val_loss` throughout is a weighted average of each client's local validation
+reconstruction error (MSE). It measures how well the global model reconstructs
+the normal baseline on held-out data — lower is better. AUROC and AUPRC are
+the primary success metrics.
 
 ---
 
@@ -234,42 +304,15 @@ try/except and record `"git_commit": null`.
 To compare experiments across runs from the shell:
 
 ```bash
-# F1 scores for all Transformer experiments
-jq -r '[.experiment_id, .f1] | @tsv' results/*/metrics.json | grep Transformer
+# AUROC scores for all PatchTST experiments
+jq -r '[.experiment_id, .auroc] | @tsv' results/*/metrics.json | grep PatchTST
 
-# All experiments with recall > 0.9
-jq -r 'select(.recall > 0.9) | .experiment_id' results/*/metrics.json
+# All experiments with AUROC > 0.95
+jq -r 'select(.auroc > 0.95) | .experiment_id' results/*/metrics.json
+
+# FL detection metrics from all runs
+jq -r '.detection[]? | [.auroc, .auprc, .cpu_latency_ms] | @tsv' results/*/fl_summary.json
 
 # Experiments run from a specific commit
 jq -r 'select(.git_commit == "abc123") | .experiment_id' results/*/metadata.json
-```
-
----
-
-## Model Sweeps
-
-When running a model sweep (from `poc_ecg_model_sweep.yaml`), each model
-produces its own results directory:
-
-```
-results/
-├── 20260616_143022_Transformer_ecg_brenton/
-├── 20260616_143501_iTransformer_ecg_brenton/
-├── 20260616_143820_PatchTST_ecg_brenton/
-...
-```
-
-The sweep script writes an additional `sweep_summary.json` at the sweep level:
-
-```json
-{
-  "sweep_id": "20260616_143022_sweep_ecg_brenton",
-  "models": ["PatchTST", "CNNAutoencoder", "TimesNet", "iTransformer"],
-  "best_model": "PatchTST",
-  "best_auroc": 0.988,
-  "results": [
-    {"model": "PatchTST", "auroc": 0.988, "experiment_id": "..."},
-    ...
-  ]
-}
 ```
