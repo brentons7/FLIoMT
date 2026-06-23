@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-06-23T18:30:08.244564+00:00",
+  "patient": "mitbih_106",
+  "sensor": "ecg",
+  "seq_len": 128,
+  "train_conditions": [
+    "normal"
+  ],
+  "test_conditions": [
+    "arrhythmia"
+  ],
+  "epochs": 200,
+  "lr": 0.0001,
+  "batch_size": 16,
+  "results": [
+    {
+      "model": "iTransformer",
+      "n_params": 430720,
+      "param_mb": 1.7229,
+      "best_val_loss": 0.02144596,
+      "auroc": 0.9795,
+      "auprc": 0.912609,
+      "f1_pa": 1.0,
+      "f1_raw": 0.163522,
+      "precision_pa": 1.0,
+      "recall_pa": 1.0,
+      "precision_raw": 1.0,
+      "recall_raw": 0.089041,
+      "mean_normal_score": 0.01134126,
+      "std_normal_score": 0.00878928,
+      "mean_anomaly_score": 0.0670753,
+      "score_delta": 0.05573404,
+      "score_separation": 6.3411,
+      "cpu_latency_ms": 3.694,
+      "gpu_throughput_wps": 0,
+      "train_secs": 321.7
+    }
+  ]
+}
