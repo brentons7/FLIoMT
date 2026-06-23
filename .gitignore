@@ -54,3 +54,4 @@ Thumbs.db
 # Experiment tracking artifacts
 wandb/
 mlruns/
+JOURNAL.md
