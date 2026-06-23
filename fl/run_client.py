@@ -232,13 +232,13 @@ def main() -> None:
     num_workers = train_cfg.get("num_workers",  0)
 
     if partition_strategy == "temporal":
-        train_loader, val_loader, _ = build_dataloaders(
+        train_loader, val_loader, test_loader = build_dataloaders(
             config,
             partition_id=args.partition_id,
             num_partitions=num_partitions,
         )
     else:
-        full_train_loader, val_loader, _ = build_dataloaders(config)
+        full_train_loader, val_loader, test_loader = build_dataloaders(config)
         train_loader = make_loader(
             full_train_loader.dataset,
             partition_strategy=partition_strategy,
@@ -257,7 +257,15 @@ def main() -> None:
     print(f"  train={n_train} windows | val={n_val} windows | batch={batch_size}")
 
     # ── FL client ─────────────────────────────────────────────────────────────
-    client = PhysioAnomalyClient(model, train_loader, val_loader, device)
+    data_cfg  = config["data"]
+    model_cfg = config["model"]
+    client = PhysioAnomalyClient(
+        model, train_loader, val_loader, device,
+        test_loader=test_loader,
+        train_label=data_cfg["train_conditions"][0],
+        seq_len=data_cfg.get("seq_len", 100),
+        enc_in=model_cfg.get("enc_in", 1),
+    )
 
     print(f"Connecting to FL server at {args.server_address} ...")
     fl.client.start_numpy_client(server_address=args.server_address, client=client)

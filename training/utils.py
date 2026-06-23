@@ -159,6 +159,51 @@ def adjustment(gt: np.ndarray, pred: np.ndarray) -> tuple[np.ndarray, np.ndarray
 
 
 # ---------------------------------------------------------------------------
+# Edge Inference Benchmarking
+# ---------------------------------------------------------------------------
+
+def measure_edge(model: nn.Module, seq_len: int, enc_in: int) -> dict:
+    """
+    Measure CPU single-window latency and GPU batched throughput.
+
+    Restores the model to its original device afterwards.
+    GPU throughput is 0 when CUDA is unavailable (e.g. Pi 5).
+    """
+    import time
+    original_device = next(model.parameters()).device
+    model.eval()
+
+    single = torch.zeros(1, seq_len, enc_in)
+    cpu_m  = model.to("cpu")
+    with torch.no_grad():
+        for _ in range(20):
+            cpu_m(single)
+        N  = 500
+        t0 = time.time()
+        for _ in range(N):
+            cpu_m(single)
+    cpu_ms = round((time.time() - t0) / N * 1000, 3)
+
+    gpu_wps = 0
+    if torch.cuda.is_available():
+        batched = torch.zeros(32, seq_len, enc_in).to("cuda")
+        gpu_m   = model.to("cuda")
+        with torch.no_grad():
+            for _ in range(20):
+                gpu_m(batched)
+            torch.cuda.synchronize()
+            N  = 200
+            t0 = time.time()
+            for _ in range(N):
+                gpu_m(batched)
+            torch.cuda.synchronize()
+        gpu_wps = round(N * 32 / (time.time() - t0))
+
+    model.to(original_device)
+    return {"cpu_latency_ms": cpu_ms, "gpu_throughput_wps": gpu_wps}
+
+
+# ---------------------------------------------------------------------------
 # Reconstruction Metrics
 # ---------------------------------------------------------------------------
 

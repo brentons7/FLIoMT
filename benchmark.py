@@ -40,7 +40,7 @@ from torch import optim
 from datasets.registry import build_dataloaders
 from models.registry import ModelRegistry
 from training.evaluator import Evaluator
-from training.utils import EarlyStopping, adjust_learning_rate
+from training.utils import EarlyStopping, adjust_learning_rate, measure_edge
 
 # ── Model presets (same as fl/run_client.py — edit both if you change these) ──
 _MODEL_PRESETS: dict[str, dict] = {
@@ -174,53 +174,6 @@ def _train(
     return best_val, time.time() - t0
 
 
-def _measure_edge(model: nn.Module, seq_len: int, enc_in: int) -> dict:
-    """
-    Measure inference characteristics relevant to edge deployment.
-
-    CPU single-window latency: simulates the Pi 5 — one window arrives,
-    model scores it, result is returned. This is the latency that determines
-    whether real-time monitoring is feasible on the Pi.
-
-    GPU throughput: simulates the Orin Nano running batched inference.
-    Reported as windows per second.
-    """
-    model.eval()
-    single  = torch.zeros(1,  seq_len, enc_in)
-    batched = torch.zeros(32, seq_len, enc_in)
-    result  = {}
-
-    # ── CPU single-window latency (Pi 5 scenario) ─────────────────────────────
-    cpu_model = model.to("cpu")
-    with torch.no_grad():
-        for _ in range(20):           # warmup
-            cpu_model(single)
-        N  = 500
-        t0 = time.time()
-        for _ in range(N):
-            cpu_model(single)
-    result["cpu_latency_ms"] = round((time.time() - t0) / N * 1000, 3)
-
-    # ── GPU batched throughput (Orin Nano scenario) ───────────────────────────
-    if torch.cuda.is_available():
-        gpu_model        = model.to("cuda")
-        batched_gpu      = batched.to("cuda")
-        with torch.no_grad():
-            for _ in range(20):       # warmup
-                gpu_model(batched_gpu)
-            torch.cuda.synchronize()
-            N  = 200
-            t0 = time.time()
-            for _ in range(N):
-                gpu_model(batched_gpu)
-            torch.cuda.synchronize()
-        result["gpu_throughput_wps"] = round(N * 32 / (time.time() - t0))
-        model.to("cuda")              # restore to training device
-    else:
-        model.to("cpu")
-
-    return result
-
 
 def _run_one(
     model_name: str,
@@ -257,7 +210,7 @@ def _run_one(
     )
     metrics = evaluator.run(labeled=True)
 
-    edge = _measure_edge(model, args.seq_len, args.enc_in)
+    edge = measure_edge(model, args.seq_len, args.enc_in)
 
     return {
         "model":               model_name,

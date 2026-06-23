@@ -14,6 +14,7 @@ Each round, fit() reports back to the server:
 """
 
 from __future__ import annotations
+import math
 import time
 from collections import OrderedDict
 
@@ -24,6 +25,9 @@ from torch import optim
 from torch.utils.data import DataLoader
 
 import flwr as fl
+
+from training.evaluator import Evaluator
+from training.utils import measure_edge
 
 
 def get_parameters(model: nn.Module) -> list[np.ndarray]:
@@ -68,11 +72,19 @@ class PhysioAnomalyClient(fl.client.NumPyClient):
         train_loader: DataLoader,
         val_loader: DataLoader,
         device: torch.device,
+        test_loader: DataLoader | None = None,
+        train_label: str = "normal",
+        seq_len: int = 100,
+        enc_in: int = 1,
     ) -> None:
         self.model        = model.to(device)
         self.train_loader = train_loader
         self.val_loader   = val_loader
         self.device       = device
+        self.test_loader  = test_loader
+        self.train_label  = train_label
+        self.seq_len      = seq_len
+        self.enc_in       = enc_in
         self.criterion    = nn.MSELoss()
 
     def get_parameters(self, config: dict) -> list[np.ndarray]:
@@ -135,7 +147,37 @@ class PhysioAnomalyClient(fl.client.NumPyClient):
         eval_time = time.time() - t_eval
 
         avg_loss = total_loss / num_samples if num_samples > 0 else 0.0
-        return avg_loss, num_samples, {
+        metrics: dict = {
             "val_loss":          avg_loss,
             "eval_time_seconds": round(eval_time, 3),
         }
+
+        if config.get("is_final_round") and self.test_loader is not None:
+            print("Final round — running full anomaly detection evaluation…")
+            evaluator = Evaluator(
+                model=self.model,
+                train_loader=self.train_loader,
+                test_loader=self.test_loader,
+                device=self.device,
+                train_label=self.train_label,
+            )
+            det = evaluator.run(labeled=True)
+            edge = measure_edge(self.model, self.seq_len, self.enc_in)
+
+            def _safe(v: float) -> float:
+                return 0.0 if math.isnan(v) else float(v)
+
+            metrics.update({
+                "auroc":              _safe(det["auroc"]),
+                "auprc":              _safe(det["auprc"]),
+                "f1_pa":              _safe(det["f1_pa"]),
+                "f1_raw":             _safe(det["f1_raw"]),
+                "score_separation":   _safe(det["score_separation"]),
+                "score_delta":        _safe(det["score_delta"]),
+                "mean_normal_score":  _safe(det["mean_normal_score"]),
+                "mean_anomaly_score": _safe(det["mean_anomaly_score"]),
+                "cpu_latency_ms":     edge["cpu_latency_ms"],
+                "gpu_throughput_wps": float(edge["gpu_throughput_wps"]),
+            })
+
+        return avg_loss, num_samples, metrics

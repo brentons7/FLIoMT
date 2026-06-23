@@ -29,7 +29,7 @@ from pathlib import Path
 import yaml
 import flwr as fl
 from flwr.server.strategy import FedAvg
-from flwr.common import parameters_to_ndarrays
+from flwr.common import parameters_to_ndarrays, EvaluateIns
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -56,13 +56,15 @@ class TimedFedAvg(FedAvg):
         n_params / param_mb  — model size (from first client response, round 1 only)
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, total_rounds: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._round_start: dict[int, float] = {}
-        self._bytes_out:   dict[int, int]   = {}
-        self._round_lr:    dict[int, float] = {}
-        self.round_stats:  list[dict]        = []
-        self._model_size:  dict | None       = None
+        self._total_rounds: int              = total_rounds
+        self._round_start:  dict[int, float] = {}
+        self._bytes_out:    dict[int, int]   = {}
+        self._round_lr:     dict[int, float] = {}
+        self.round_stats:   list[dict]       = []
+        self._model_size:   dict | None      = None
+        self.final_metrics: list[dict]       = []
 
     def configure_fit(self, server_round, parameters, client_manager):
         self._round_start[server_round] = time.time()
@@ -114,6 +116,15 @@ class TimedFedAvg(FedAvg):
         self.round_stats.append(stat)
         return super().aggregate_fit(server_round, results, failures)
 
+    def configure_evaluate(self, server_round, parameters, client_manager):
+        instructions = super().configure_evaluate(server_round, parameters, client_manager)
+        if server_round == self._total_rounds and instructions:
+            instructions = [
+                (proxy, EvaluateIns(ins.parameters, {**ins.config, "is_final_round": True}))
+                for proxy, ins in instructions
+            ]
+        return instructions
+
     def aggregate_evaluate(self, server_round, results, failures):
         # Attach eval times to the matching round stat
         eval_times = [
@@ -125,6 +136,14 @@ class TimedFedAvg(FedAvg):
             if stat["round"] == server_round and eval_times:
                 stat["client_eval_times_seconds"] = [round(t, 3) for t in eval_times]
                 stat["avg_client_eval_seconds"]   = round(sum(eval_times) / len(eval_times), 3)
+
+        # Collect full detection metrics from final round
+        if server_round == self._total_rounds:
+            for _, eval_res in results:
+                m = eval_res.metrics
+                if "auroc" in m:
+                    self.final_metrics.append(dict(m))
+
         return super().aggregate_evaluate(server_round, results, failures)
 
 
@@ -183,6 +202,7 @@ def main() -> None:
         }
 
     strategy = TimedFedAvg(
+        total_rounds=rounds,
         min_fit_clients=min_clients,
         min_evaluate_clients=min_clients,
         min_available_clients=min_clients,
@@ -294,6 +314,8 @@ def _save_results(
         "final_val_loss": final_val_loss,
         "best_round":     best_entry.get("round"),
         "best_val_loss":  best_entry.get("val_loss"),
+
+        "detection": strategy.final_metrics if strategy.final_metrics else None,
     }
 
     out = result_dir / "fl_summary.json"
@@ -324,6 +346,13 @@ def _save_results(
         print(f"  Final loss   : {final_val_loss:.6f}")
     if best_entry:
         print(f"  Best loss    : {best_entry.get('val_loss', '?'):.6f}  (round {best_entry.get('round', '?')})")
+    if strategy.final_metrics:
+        print(f"\n  Detection metrics (per client):")
+        for i, m in enumerate(strategy.final_metrics):
+            print(f"    Client {i}: AUROC={m.get('auroc', '?'):.4f}  AUPRC={m.get('auprc', '?'):.4f}  "
+                  f"F1(PA)={m.get('f1_pa', '?'):.4f}  F1(raw)={m.get('f1_raw', '?'):.4f}  "
+                  f"Sep={m.get('score_separation', '?'):.2f}σ  "
+                  f"CPU={m.get('cpu_latency_ms', '?'):.3f}ms")
 
     if round_history:
         print(f"\n  Round  val_loss    wall(s)  comm(MB)  avg_client_fit(s)")
