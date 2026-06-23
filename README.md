@@ -21,7 +21,7 @@ Three architectures compared on MIT-BIH Arrhythmia Database (train: normal sinus
 | Model | Params | AUROC (c0 / c1) | AUPRC (c0 / c1) | CPU ms (c0 / c1) | Comm/run |
 |-------|--------|-----------------|-----------------|------------------|----------|
 | **iTransformer** | 430K | **0.9989 / 0.9946** | **0.9912 / 0.9674** | 3.7 / 4.2 | 1.38 GB |
-| CNNAutoencoder | 15.7K | 0.959 / 0.970 | 0.861 / 0.826 | 6.9 / **0.95** | **27 MB** |
+| CNNAutoencoder | 18.9K | 0.962 / 0.990 | 0.887 / 0.945 | 7.4 / **1.1** | **33 MB** |
 | PatchTST | 794K | 0.929 / 0.981 | 0.810 / 0.922 | 8.9 / 16.2 | 3.44 GB |
 
 **TimesNet** was evaluated but excluded: 9.4M params, 350 ms CPU inference on Pi 5, 15.1 GB communication over 100 rounds. Not viable for edge IoMT deployment.
@@ -31,11 +31,11 @@ Three architectures compared on MIT-BIH Arrhythmia Database (train: normal sinus
 | Param | iTransformer | CNNAutoencoder | PatchTST |
 |-------|-------------|----------------|----------|
 | d_model | 128 | 32 | 128 |
-| e_layers | 3 | 5 | 4 |
+| e_layers | 3 | 6 | 4 |
 | d_ff | 256 | — | 256 |
 | n_heads | 8 | — | 8 |
 | patch_len / stride | — | — | 16 / 8 |
-| RF at 100 Hz | — | ~630 ms | — |
+| RF at 100 Hz | — | ~1.27 s | — |
 
 ### Per-model training config (tuned)
 

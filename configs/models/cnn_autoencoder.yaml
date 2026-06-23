@@ -2,12 +2,16 @@
 # Tier 1 | Edge-compatible: yes (no CUDA ops, fastest model on Pi CPU)
 #
 # Receptive field per e_layers at 100 Hz:
-#   e_layers=4 → RF ~31 samples (310 ms)
-#   e_layers=5 → RF ~63 samples (630 ms ≈ one full cardiac cycle at 70 bpm)  ← current
+#   e_layers=4 → RF ~31 samples  (310 ms)
+#   e_layers=5 → RF ~63 samples  (630 ms ≈ one cardiac cycle at 70 bpm)
+#   e_layers=6 → RF ~127 samples (1.27 s ≈ full seq_len=128 window)  ← current
+#
+# e_layers=6 outperforms e_layers=5 on both clients (AUROC 0.962/0.990 vs 0.959/0.970)
+# with higher score separation and earlier convergence (best at r59 vs r67).
 # d_ff and n_heads are unused; only d_model, e_layers, and dropout matter.
 
 model:
   name: CNNAutoencoder
   d_model: 32
-  e_layers: 5
+  e_layers: 6
   dropout: 0.1

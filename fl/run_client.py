@@ -59,10 +59,11 @@ _MODEL_PRESETS: dict[str, dict] = {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
         "dropout": 0.1, "top_k": 5, "num_kernels": 6,
     },
-    # CNNAutoencoder: e_layers=5 extends dilated-conv receptive field from
-    # ~310 ms (4 layers) to ~630 ms (5 layers) — one full cardiac cycle at 70 bpm.
+    # CNNAutoencoder: e_layers=6 extends dilated-conv receptive field to
+    # ~127 samples (1.27 s) ≈ full seq_len=128 window. Outperforms e_layers=5
+    # (RF ~630 ms) on both clients, converges faster (best at r59 vs r67).
     "CNNAutoencoder": {
-        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 5,
+        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 6,
         "dropout": 0.1,
     },
 }

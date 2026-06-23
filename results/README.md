@@ -13,6 +13,8 @@ Each experiment run creates a subdirectory here named by experiment ID.
 | 20260623_133450_fl_PatchTST | PatchTST | Tuned — 150r, e_layers=4, seq_len=128 |
 | 20260623_133937_fl_CNNAutoencoder | CNNAutoencoder | Tuned — 100r, e_layers=5, seq_len=128 |
 | 20260623_135731_fl_iTransformer | iTransformer | Tuned — 200r, flat LR, local_epochs=2; AUROC 0.999/0.995 |
+| 20260623_161544_fl_CNNAutoencoder | CNNAutoencoder | e_layers=6 — AUROC 0.962/0.990; replaces e_layers=5 as production |
+| 20260623_165016_fl_PatchTST | PatchTST | seq_len=100, e_layers=4 — AUROC 0.979/0.914; confirms seq_len=128 caused c0 regression |
 
 ## Directory Layout
 
