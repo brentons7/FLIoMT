@@ -1,12 +1,13 @@
 # CNNAutoencoder — dilated residual 1D CNN for anomaly detection
 # Tier 1 | Edge-compatible: yes (no CUDA ops, fastest model on Pi CPU)
 #
-# Receptive field at e_layers=4, 100 Hz: ~31 samples (310 ms)
-# Increase e_layers to 5 for RF ~63 samples (630 ms = one full cardiac cycle).
+# Receptive field per e_layers at 100 Hz:
+#   e_layers=4 → RF ~31 samples (310 ms)
+#   e_layers=5 → RF ~63 samples (630 ms ≈ one full cardiac cycle at 70 bpm)  ← current
 # d_ff and n_heads are unused; only d_model, e_layers, and dropout matter.
 
 model:
   name: CNNAutoencoder
   d_model: 32
-  e_layers: 4
+  e_layers: 5
   dropout: 0.1

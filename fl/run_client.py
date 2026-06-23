@@ -43,19 +43,26 @@ from fl.partition import make_loader
 # Default architecture params per model — used when no YAML is provided.
 # CLI args always override these.
 _MODEL_PRESETS: dict[str, dict] = {
+    # iTransformer: inverted-attention treats channels as tokens.
+    # With 1 ECG channel the attention is a 1×1 no-op; increased depth and
+    # flat LR give the FFN layers more capacity and gradient steps to compensate.
     "iTransformer": {
-        "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2, "dropout": 0.1,
+        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 3, "dropout": 0.1,
     },
+    # PatchTST: e_layers=4 (one deeper than baseline run) at seq_len=128
+    # gives 15 non-overlapping patches; d_model=128 is the proven sweet spot.
     "PatchTST": {
-        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 3,
+        "d_model": 128, "d_ff": 256, "n_heads": 8, "e_layers": 4,
         "dropout": 0.1, "patch_len": 16, "stride": 8,
     },
     "TimesNet": {
         "d_model": 64, "d_ff": 128, "n_heads": 8, "e_layers": 2,
         "dropout": 0.1, "top_k": 5, "num_kernels": 6,
     },
+    # CNNAutoencoder: e_layers=5 extends dilated-conv receptive field from
+    # ~310 ms (4 layers) to ~630 ms (5 layers) — one full cardiac cycle at 70 bpm.
     "CNNAutoencoder": {
-        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 4,
+        "d_model": 32, "d_ff": 64, "n_heads": 1, "e_layers": 5,
         "dropout": 0.1,
     },
 }

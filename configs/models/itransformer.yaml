@@ -1,13 +1,16 @@
-# iTransformer — default hyperparameters for anomaly detection
-# Source: tslib/scripts/anomaly_detection/MSL/iTransformer.sh
+# iTransformer — tuned hyperparameters for ECG anomaly detection
 # Tier 1 | Edge-compatible: yes
-# Note: Inverted attention treats each channel as a token.
-#       Strong for multi-channel data (ECG + PPG combined).
+#
+# Warning: inverted-attention treats each channel as a token. With enc_in=1
+# (single ECG channel), self-attention is a 1×1 operation — the model's core
+# mechanism is inactive. Extra depth (e_layers=3) and flat LR give the FFN
+# layers more capacity and training signal to compensate.
+# Designed for multi-channel data; consider enc_in ≥ 3 (ECG + PPG) for full benefit.
 
 model:
   name: iTransformer
-  d_model: 32
+  d_model: 128
   n_heads: 8
-  e_layers: 1
-  d_ff: 32
+  e_layers: 3
+  d_ff: 256
   dropout: 0.1

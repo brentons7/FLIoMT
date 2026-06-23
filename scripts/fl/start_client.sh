@@ -33,7 +33,7 @@ BATCH_SIZE=${BATCH_SIZE:-16}
 USE_GPU=${USE_GPU:-false}
 NUM_WORKERS=${NUM_WORKERS:-0}
 SENSOR=${SENSOR:-ecg}
-SEQ_LEN=${SEQ_LEN:-100}
+SEQ_LEN=${SEQ_LEN:-128}
 
 # ── Architecture overrides (leave unset to use model preset defaults) ─────────
 # D_MODEL=128
