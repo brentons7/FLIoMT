@@ -137,13 +137,13 @@ def _build_config(args: argparse.Namespace) -> dict:
     if args.patient  is not None: data["patient"]  = args.patient
     if args.sensor   is not None: data["sensor"]   = args.sensor
     if args.seq_len  is not None: data["seq_len"]  = args.seq_len
-    data.setdefault("patient",           "wesad_S2")
+    data.setdefault("patient",           "mitbih_213")
     data.setdefault("sensor",            "ecg")
     data.setdefault("seq_len",           100)
     data.setdefault("step",              data["seq_len"] // 2)
-    data.setdefault("train_conditions",  ["baseline"])
-    data.setdefault("val_conditions",    ["baseline"])
-    data.setdefault("test_conditions",   ["stress"])
+    data.setdefault("train_conditions",  ["normal"])
+    data.setdefault("val_conditions",    ["normal"])
+    data.setdefault("test_conditions",   ["arrhythmia"])
     data.setdefault("train_ratio",       0.7)
     data.setdefault("val_ratio",         0.1)
 

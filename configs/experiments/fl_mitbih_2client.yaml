@@ -18,7 +18,7 @@ experiment:
   mode: federated
 
 data:
-  patient: mitbih_100           # Override per device: mitbih_100 / mitbih_105
+  patient: mitbih_213           # Override per device: mitbih_213 (Orin) / mitbih_106 (Pi 5)
   sensor: ecg
   train_conditions: [normal]
   val_conditions: [normal]

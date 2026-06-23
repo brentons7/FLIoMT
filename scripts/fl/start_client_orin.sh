@@ -19,7 +19,7 @@ fi
 MODEL=${MODEL:-PatchTST}
 
 # ── This device ───────────────────────────────────────────────────────────────
-PATIENT=${PATIENT:-wesad_S2}
+PATIENT=${PATIENT:-mitbih_213}
 PARTITION_ID=${PARTITION_ID:-0}
 NUM_PARTITIONS=${NUM_PARTITIONS:-1}
 BATCH_SIZE=${BATCH_SIZE:-16}

@@ -1,5 +1,7 @@
-# Generated data — regenerable from raw CSVs
-data/processed/
+# Processed data — ignore everything except FL experiment records
+data/processed/*
+!data/processed/mitbih_213/
+!data/processed/mitbih_106/
 
 # Experiment outputs — large binary files (metadata.json / metrics.json are tracked)
 results/**/*.pth
