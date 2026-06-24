@@ -110,6 +110,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--stride",       type=int,   default=None, help="PatchTST")
     p.add_argument("--top_k",        type=int,   default=None, help="TimesNet")
     p.add_argument("--num_kernels",  type=int,   default=None, help="TimesNet")
+    p.add_argument("--seed",         type=int,   default=None,
+                   help="Random seed for reproducibility (default: 42)")
 
     return p.parse_args()
 
@@ -168,6 +170,7 @@ def _build_config(args: argparse.Namespace) -> dict:
     train = config["training"]
     if args.batch_size  is not None: train["batch_size"]  = args.batch_size
     if args.num_workers is not None: train["num_workers"] = args.num_workers
+    if args.seed        is not None: train["seed"]        = args.seed
     train.setdefault("batch_size",  16)
     train.setdefault("num_workers", 0)
     train.setdefault("seed",        42)

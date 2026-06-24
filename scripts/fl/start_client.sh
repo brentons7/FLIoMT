@@ -34,6 +34,7 @@ USE_GPU=${USE_GPU:-false}
 NUM_WORKERS=${NUM_WORKERS:-0}
 SENSOR=${SENSOR:-ecg}
 SEQ_LEN=${SEQ_LEN:-128}
+SEED=${SEED:-42}
 
 # ── Architecture overrides (leave unset to use model preset defaults) ─────────
 # D_MODEL=128
@@ -76,4 +77,5 @@ python fl/run_client.py \
     ${PATCH_LEN:+--patch_len  "$PATCH_LEN"} \
     ${STRIDE:+--stride        "$STRIDE"} \
     ${TOP_K:+--top_k          "$TOP_K"} \
-    ${NUM_KERNELS:+--num_kernels "$NUM_KERNELS"}
+    ${NUM_KERNELS:+--num_kernels "$NUM_KERNELS"} \
+    --seed "$SEED"
